@@ -83,6 +83,7 @@ train = args.Training
 predict = args.Predict
 
 one_track = True
+one_track_only = True
 
 
 with tf.Session(config=tf.ConfigProto(
@@ -98,7 +99,7 @@ wH = wHistory()
 
 
 batch_size = 128 # Batch size for training.
-epochs = 30  # Number of epochs to train for.
+epochs = 100  # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 
@@ -106,7 +107,7 @@ import random
 #random.seed(8) #l'ha detto tommaso
 random.seed(seed)
 
-jetNum=100000
+jetNum=500000#100000
 valSplit=0.2
 # slen=30
 # fraction=0.15 #????
@@ -118,7 +119,10 @@ layNum = 4
 parNum = 4
 
 input_ = np.zeros(shape=(jetNum,layNum, jetDim,jetDim)) #jetMap
-if generate :
+if one_track_only :
+    target_par = np.zeros(shape=(jetNum, parNum))
+    target_map = np.zeros(shape=(jetNum, layNum, jetDim,jetDim))
+elif generate :
     target_par = np.zeros(shape=(jetNum, trackNum, parNum)) #4=x,y,eta,phi#TODO 10par +2*layNum
     target_par0 = np.zeros(shape=(jetNum, parNum)) #4=x,y,eta,phi#TODO 10par
     target_map = np.zeros(shape=(jetNum, trackNum, layNum, jetDim,jetDim)) #trackMap
@@ -238,15 +242,15 @@ if generate :
                        channelx=int(random.gauss(x,0.3))
                        channely=int(random.gauss(y,0.3))
                        if channelx>=-jetDim/2 and channelx < jetDim/2 and channely>=-jetDim/2 and channely < jetDim/2 :
-                           jetMap[lay][channelx+jetDim/2][channely+jetDim/2]+=1./100.
-                           trackMap[trk][lay][channelx+jetDim/2][channely+jetDim/2] +=1./100.
-            #    if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==0: #TODO 10 par
-               if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==0: #TODO 4 par
-                        trackPar[trk][0] = x
-                        trackPar[trk][1] = y
-               if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==3:
-                        trackPar[trk][2] = x
-                        trackPar[trk][3] = y
+                           jetMap[lay][channelx+jetDim/2][channely+jetDim/2]+=300*1./100.
+                           trackMap[trk][lay][channelx+jetDim/2][channely+jetDim/2] +=300*1./100.
+               if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==0: #TODO 10 par
+            #    if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==0: #TODO 4 par
+            #             trackPar[trk][0] = x
+            #             trackPar[trk][1] = y
+            #    if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==3:
+            #             trackPar[trk][2] = x
+            #             trackPar[trk][3] = y
             #    if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2 : #TODO 10par
             #         if lay == 0:
             #             trackPar[trk][0] = trackX[trk]
@@ -257,7 +261,7 @@ if generate :
             #         # laycount=laycount+1
             #         trackPar[trk][2*lay+1+4] = y
                     # laycount=laycount+1
-                    #trackPar[trk] = (x,y,trackDirR[trk],trackDirPhi[trk]) #TODO new implementation
+                    trackPar[trk] = (x,y,trackDirR[trk],trackDirPhi[trk]) #TODO new implementation
                     # trackPar[trk] = (trackX[trk],trackY[trk],trackDirR[trk],trackDirPhi[trk]) #TODO new implementation
 
         for trk in range(trackNum) :
@@ -273,11 +277,16 @@ if generate :
         for trk in range(trackNum) :
            (trackMapSorted[trk], trackParSorted[trk], distances[trk]) = trackObj[trk] #chiedi ad andrea come mai ho douto ricrearni nuovi
 
-        if(i<=jetNum*1) :
+        #if(i<=jetNum*1) :
+        if one_track_only== False :
            target_map[i] = trackMapSorted
            target_map0[i] =trackMapSorted[0] #solo prima traccia
            target_par[i] = trackParSorted
            target_par0[i] = trackParSorted[0] #solo prima traccia
+           input_[i] = jetMap
+        else :
+           target_map[i] =trackMapSorted[0] #solo prima traccia
+           target_par[i] = trackParSorted[0] #solo prima traccia
            input_[i] = jetMap
 
        # if(i>jetNum*0.8) :
@@ -291,13 +300,12 @@ if generate :
     # # np.save(outfile, target_par)
     # np.save(outfile, target_map)
 
-    if one_track :
-        outfile0 = file("ONETRACK_toy_MC_event_{ev}_layer{llay}_angle{angle}_4par_{seed}.npz".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed),"w")
-        np.savez(outfile0, input_=input_, target_par=target_par0, target_map=target_map0)
-
+    if one_track_only :
+        np.savez("ONETRACK_toy_MC_event_{ev}_layer{llay}_angle{angle}_4par_{seed}_300".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed), input_=input_, target_par=target_par, target_map=target_map)
+    elif one_track :
+        np.savez("ONETRACK_toy_MC_event_{ev}_layer{llay}_angle{angle}_4par_{seed}".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed), input_=input_, target_par=target_par0, target_map=target_map0)
     else :
-        outfile = file("toy_MC_event{ev}_layer{llay}_angle{angle}.npz".format(ev=jetNum,llay=layNum, angle=openAngle),"w")
-        np.savez(outfile, input_=input_, target_par=target_par, target_map=target_map)
+        np.savez("toy_MC_event{ev}_layer{llay}_angle{angle}".format(ev=jetNum,llay=layNum, angle=openAngle), input_=input_, target_par=target_par, target_map=target_map)
 
 
 
@@ -315,7 +323,7 @@ if generate==False :
     # target_par= loadedfile['target_par']
     # target_map= loadedfile['target_map']
     if input_name=="multi" :
-        files=glob.glob('/home/users/bertacch/cms/cms_mywork/trackjet/toyNN/ONETRACK_toy_MC_event_100000_layer4_angle1_4par_*npz')
+        files=glob.glob('/home/users/bertacch/cms/cms_mywork/trackjet/toyNN/ONETRACK_toy_MC_event_100000_layer4_angle1_4par_*.npz')
         print("Number of file: =",len(files))
         con = 0
         for f in files :
@@ -355,7 +363,7 @@ if generate==False :
         #          target_par[jet][trk][1]+=jetDim/2     #FIXME remove jetDim/2: only for RELU activation!!!!!
 
 
-
+    print("loaded complete")
 #-----------------------------------------KERAS MODEL -----------------------------------#
 
 if train or predict :
@@ -388,7 +396,7 @@ if train or predict :
         reshaped = Reshape((layNum, 10,10))(dense100) #28(layNum, 10,10)
         deconv3_21 = Conv2DTranspose(3,21, data_format="channels_first", activation='relu', dilation_rate=2)(reshaped)
         newInput = concatenate([NNinputs,deconv3_21],axis=1)
-        conv1_1 = Conv2D(4,1,data_format="channels_first", activation='relu')(newInput)
+        #conv1_1 = Conv2D(4,1,data_format="channels_first", activation='relu')(newInput)
         conv3_11 = Conv2D(3,11,data_format="channels_first", activation='relu')(newInput)
         denconv7_11 = Conv2DTranspose(7,11, data_format="channels_first", activation='relu', dilation_rate=2)(conv3_11)
         conv1_1 = Conv2D(4,1,data_format="channels_first", activation='relu')(denconv7_11)
@@ -436,14 +444,14 @@ if train or predict :
 continue_training = False
 if train :
     if continue_training :
-        model.load_weights('toyNN_train.h5')
-        history  = model.fit(input_, [target_par, target_map],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit, initial_epoch=101) #TODO map pred
-        model.save_weights('toyNN_train_bis.h5')
+        model.load_weights('toyNN_train_{Seed}.h5'.format(Seed=seed))
+        history  = model.fit(input_, [target_par, target_map],  batch_size=batch_size, nb_epoch=epochs+epochs, verbose = 2, validation_split=valSplit, initial_epoch=31) #TODO map pred
+        model.save_weights('toyNN_train_bis_{Seed}.h5'.format(Seed=seed))
     else :
         history  = model.fit(input_, [target_par, target_map],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit) #TODO map pred
         #history  = model.fit(input_, [target_map],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit) #TODO map pred
         # model.fit(input_, [target_par],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit)
-        model.save_weights('toyNN_train.h5')
+        model.save_weights('toyNN_train_{Seed}.h5'.format(Seed=seed))
 
     pylab.plot(history.history['loss'])
     pylab.plot(history.history['val_loss'])
@@ -451,19 +459,19 @@ if train :
     pylab.ylabel('loss')
     pylab.xlabel('epoch')
     pylab.legend(['train', 'test'], loc='upper right')
-    pylab.savefig("loss.pdf")
+    pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
     pylab.show()
 
 if predict :
 
     if train == False :
-        model.load_weights('toyNN_train.h5')
+        model.load_weights('toyNN_train_{Seed}.h5'.format(Seed=seed))
 
     [validation_par,validation_map] = model.predict(input_)#TODO map pred
     #validation_map = model.predict(input_)#TODO map pred
     #validation_par = model.predict(input_)
-    outpred = file("toyNN_prediction.pnz","w")
-    np.savez(outpred, validation_par=validation_par,validation_map=validation_map) #TODO map pred
+    #outpred = file("toyNN_prediction_{Seed}".format(Seed=seed),"w")
+    np.savez("toyNN_prediction_{Seed}".format(Seed=seed), validation_par=validation_par,validation_map=validation_map) #TODO map pred
     # np.savez(outpred, validation_par=validation_par)
 
 
@@ -479,7 +487,7 @@ if predict :
 
 if output :
      if predict == False :
-        loadpred = np.load("toyNN_prediction.pnz")
+        loadpred = np.load("toyNN_prediction_{Seed}.npz".format(Seed=seed))
         # validation_par0 = loadpred['validation_par0']
         # validation_map0 = loadpred['validation_map0']
         validation_par = loadpred['validation_par']
@@ -558,7 +566,7 @@ if output :
 
      for jet in range(numPrint) :
          j_eff = jet+validation_offset
-         j_eff = jet
+        #  j_eff = jet
          for lay in range(layNum) :
              for x in range(jetDim) :
                  for y in range(jetDim) :
@@ -581,17 +589,20 @@ if output :
                  print("prediction:", validation_par[j_eff][0]-jetDim/2,validation_par[j_eff][1]-jetDim/2, validation_par[j_eff][2]-jetDim/2, validation_par[j_eff][3]-jetDim/2)#TODO new implementation
 
                  for i in range(1) : #trackNum
-                    #  d = (lay+1)*layDist*math.tan(target_par[j_eff][2])#TODO new implementation
-                    #  xoff = (target_par[j_eff][0]-jetDim/2)/(d/(lay+1))-math.sin(target_par[j_eff][3])#TODO new implementation
-                    #  yoff = (target_par[j_eff][1]-jetDim/2)/(d/(lay+1))-math.cos(target_par[j_eff][3])#TODO new implementation
-                    #  x = d*(math.sin(target_par[j_eff][3])+xoff) #-jetDim/2#TODO new implementation
-                    #  y = d*(math.cos(target_par[j_eff][3])+yoff) #-jetDim/2#TODO new implementation
+
+                     d = (lay+1)*layDist*math.tan(target_par[j_eff][2])#TODO new implementation
+                     xoff = (target_par[j_eff][0]-jetDim/2)/(d/(lay+1))-math.sin(target_par[j_eff][3])#TODO new implementation
+                     yoff = (target_par[j_eff][1]-jetDim/2)/(d/(lay+1))-math.cos(target_par[j_eff][3])#TODO new implementation
+                     x = d*(math.sin(target_par[j_eff][3])+xoff) #-jetDim/2#TODO new implementation
+                     y = d*(math.cos(target_par[j_eff][3])+yoff) #-jetDim/2#TODO new implementation
 
                     #  d = (lay+1)*layDist*math.tan(target_par[j_eff][2])#TODO new implementation
                     #  x = d*(math.sin(target_par[j_eff][3])+target_par[j_eff][0]) #-jetDim/2#TODO new implementation
                     #  y = d*(math.cos(target_par[j_eff][3])+target_par[j_eff][1]) #-jetDim/2#TODO new implementation
-                     x = (target_par[j_eff][2]-target_par[j_eff][0])/(layNum-1)*lay+target_par[j_eff][0]-jetDim/2
-                     y = (target_par[j_eff][3]-target_par[j_eff][1])/(layNum-1)*lay+target_par[j_eff][1]-jetDim/2
+
+                    #  x = (target_par[j_eff][2]-target_par[j_eff][0])/(layNum-1)*lay+target_par[j_eff][0]-jetDim/2 #TODO 4par
+                    #  y = (target_par[j_eff][3]-target_par[j_eff][1])/(layNum-1)*lay+target_par[j_eff][1]-jetDim/2 #TODO 4par
+
                     #  x = target_par[j_eff][2*lay+4] #TODO 10 par
                     #  y = target_par[j_eff][2*lay+1+4] #TODO 10 par
                      print("evaluated(TARGET) x,y", x,y)
@@ -605,22 +616,26 @@ if output :
                     #  print("R=",validation_par[j_eff][2])
                     #  print("tanR=",math.tan(validation_par[j_eff][2]))
                     #  print("(lay+1)*layDist=",(lay+1)*layDist)
-                    #  print("d=",d)
-                    #  if(d!=0.0) :#TODO new implementation
-                    #      xoff = (validation_par[j_eff][0]-jetDim/2)/(d/(lay+1))-math.sin(validation_par[j_eff][3])
-                    #      yoff = (validation_par[j_eff][1]-jetDim/2)/(d/(lay+1))-math.cos(validation_par[j_eff][3])
-                    #      x = d*(math.sin(validation_par[j_eff][3])+xoff) #-jetDim/2
-                    #      y = d*(math.cos(validation_par[j_eff][3])+yoff) #-jetDim/2
-                    #  else :#TODO new implementation
-                    #      x=0
-                    #      y=0
+                    #   print("d=",d)
+                     if(d!=0.0) :#TODO new implementation
+                         xoff = (validation_par[j_eff][0]-jetDim/2)/(d/(lay+1))-math.sin(validation_par[j_eff][3])
+                         yoff = (validation_par[j_eff][1]-jetDim/2)/(d/(lay+1))-math.cos(validation_par[j_eff][3])
+                         x = d*(math.sin(validation_par[j_eff][3])+xoff) #-jetDim/2
+                         y = d*(math.cos(validation_par[j_eff][3])+yoff) #-jetDim/2
+                     else :#TODO new implementation
+                         x=0
+                         y=0
                     #  d = (lay+1)*layDist*math.tan(validation_par[j_eff][2])#TODO new implementation
                     #  x = d*(math.sin(validation_par[j_eff][3])+validation_par[j_eff][0]) #-jetDim/2#TODO new implementation
                     #  y = d*(math.cos(validation_par[j_eff][3])+validation_par[j_eff][1]) #-jetDim/2#TODO new implementation
                     #  x = d*math.sin(validation_par[j_eff][3]+validation_par[j_eff][0]-jetDim/2)
                     #  y = d*math.cos(validation_par[j_eff][3]+validation_par[j_eff][1]-jetDim/2)
-                     x = (validation_par[j_eff][2]-validation_par[j_eff][0])/(layNum-1)*lay+validation_par[j_eff][0]-jetDim/2
-                     y = (validation_par[j_eff][3]-validation_par[j_eff][1])/(layNum-1)*lay+validation_par[j_eff][1]-jetDim/2
+
+
+                    #  x = (validation_par[j_eff][2]-validation_par[j_eff][0])/(layNum-1)*lay+validation_par[j_eff][0]-jetDim/2  #TODO 4par
+                    #  y = (validation_par[j_eff][3]-validation_par[j_eff][1])/(layNum-1)*lay+validation_par[j_eff][1]-jetDim/2  #TODO 4par
+
+
                     #  x = validation_par[j_eff][2*lay+4] #TODO 10 par
                     #  y = validation_par[j_eff][2*lay+1+4] #TODO 10 par
                      print("evaluated(pred) x,y", x,y)
@@ -634,7 +649,7 @@ if output :
                         # if validation[jet][trk][lay][x][y]>0.5 :
                         #     mapTot[jet][lay].SetBinContent(x+1,y+1,10*validation[jet][trk][lay][x][y])
 
-     output_file = TFile("toyNN.root","recreate")
+     output_file = TFile("toyNN_{Seed}.root".format(Seed=seed),"recreate")
     #  for jet in range(10) :
     #      for lay in range(layNum) :
     #          mapTot[jet][lay].Write()
