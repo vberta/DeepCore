@@ -5,6 +5,7 @@ os.environ['GOTO_NUM_THREADS'] = '40'
 os.environ['OMP_NUM_THREADS'] = '40'
 os.environ['openmp'] = 'True'
 
+from keras.callbacks import Callback
 from keras.models import Model,load_model, Sequential
 from keras.layers import Input, LSTM, Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Reshape, Conv2DTranspose, concatenate, Concatenate, ZeroPadding2D
 import numpy as np
@@ -16,6 +17,8 @@ import sys
 import argparse
 import matplotlib as mpl
 mpl.use('Agg')
+
+import matplotlib.backends.backend_pdf as backpdf
 
 from  matplotlib import pyplot as plt
 import pylab
@@ -99,7 +102,7 @@ wH = wHistory()
 
 
 batch_size = 128 # Batch size for training.
-epochs = 100  # Number of epochs to train for.
+epochs = 30  # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 
@@ -143,6 +146,8 @@ else :
 openAngle=1 #NB never over pi/2!!!
 layDist=3 #8 #3 is CMS
 xyoff=1
+bkgNum = 4
+pixelInt = 100*1./100.
 
 
 def mindist(trackObj, trk) :
@@ -166,7 +171,89 @@ def mindistMod(maps, trk) : #TODO new implementation TODO 4 par
    min_dist = min(dist)
    return min_dist
 
-# def mindistMod(maps, trk) : #TODO new implementation TODO 10 par
+# def metricPar(target_par, validation_par) :
+#     out = 0
+#     for j in range(jetNum*(1-valSplit)) :
+#         for par in range(parNum) :
+#             out = out + (target_par[j][par]-validation_par[j][par])**2
+#     return out
+#
+# def metricMap(target_map, validation_map) :
+#     out = 0
+#     for j in range(int(jetNum*(1-valSplit))) :
+#         for lay in range(layNum) :
+#             for x in range(jetDim) :
+#                 for y in range(jetDim) :
+#                     if(target_map[j][lay][x][y]>0.1 and validation_map[j][lay][x][y]) :
+#                         out = out + (target_map[j][lay][x][y]-validation_map[j][lay][x][y])**2
+#     return out
+
+def metricComb(y_true, y_pred) :
+    # out = [0,0]
+    out = 0
+    # par_tar = [x[0] for x in y_true]
+    par_tar = y_true[0]
+    par_pred = y_true[0]
+
+
+    # map_tar = [x[1] for x in y_true]
+    #  par_pred = [x[0] for x in y_pred]
+    # map_pred = [x[1] for x in y_pred]
+
+    for j in range(jetNum*valSplit) :
+        for par in range(parNum) :
+            # out[0] = out[0] + (par_tar[j][par]-par_pred[j][par])**2
+            out = out + (par_tar[j][par]-par_pred[j][par])**2
+
+        for lay in range(layNum) :
+            for x in range(jetDim) :
+                for y in range(jetDim) :
+                    if(map_tar[j][lay][x][y]>0.1 and map_pred[j][lay][x][y]) :
+                        out[1] = out[1] + (map_tar[j][lay][x][y]-map_pred[j][lay][x][y])**2
+    return out
+
+
+def metricPar(y_true, y_pred) :
+    out = 0
+    print("y_true shape", y_true.shape)
+
+    for j in range(int(jetNum*(1-valSplit))) :
+        for par in range(parNum) :
+            out = out + (y_true[j][par]-y_pred[j][par])**2
+    print("METRICA", out)
+    return out
+
+class validationCall(Callback) :
+    def on_epoch_end(self,epoch, logs={}) : #target_par,target_map, input_
+        [call_par,call_map] = self.model.predict(input_)#TODO map pred
+
+        for par in range(parNum) :
+            # fig_counter = fig_counter+1
+            bins = np.zeros(shape=(int(jetNum*valSplit)))
+            for j in range (int(jetNum*valSplit)) :
+                j_eff = j+int(jetNum*(1-valSplit))
+                bins[j] = call_par[j_eff][par] - target_par[j_eff][par]
+            plt.figure()
+            pylab.hist(bins,100, facecolor='green', alpha=0.75)
+            pylab.title('parNum error distribution_ep{EPOCH}_par{PAR}'.format(PAR=par,EPOCH=epoch))
+            pylab.ylabel('entry')
+            pylab.xlabel('parNum error')
+            plt.grid(True)
+            # pylab.savefig("parameter_error_{EPOCH}_{PAR}.pdf".format(PAR=par,EPOCH=epoch))
+            pdf_par.savefig()
+
+
+
+
+# def metricPar(y_true, y_pred) :
+#     out = 0
+#     # for j in range(int(jetNum*(1-valSplit))) :
+#     #     for par in range(parNum) :
+#     #         out = out + (y_true[j][par]-y_pred[j][par])**2
+#     out = k.metrics.mean_squared_error(y_true[])
+#     print("METRICA", out)
+#     return out
+# # def mindistMod(maps, trk) : #TODO new implementation TODO 10 par
 #    dist = []
 #    d0 = layDist*math.tan(maps[trk][2])
 #    x0 = d0*(math.sin(maps[trk][3])+maps[trk][0])
@@ -232,6 +319,12 @@ if generate :
         #    trackDirPhi[trk] = random.uniform(0,2*math.pi)
         # laycount = 0
         for lay in range(layNum) :
+           nBkg=random.randint(0,bkgNum)
+           for b in range(nBkg) : #bkg addition
+               xBkg = random.randint(0,jetDim-1)
+               yBkg = random.randint(0,jetDim-1)
+               intBkg = random.uniform(0,2*pixelInt)
+               jetMap[lay][xBkg][yBkg]+=intBkg
            for trk in range(nTracks) :
                d = (lay+1)*layDist*math.tan(trackDirR[trk])
                x = d*(math.sin(trackDirPhi[trk])+trackX[trk])
@@ -242,8 +335,8 @@ if generate :
                        channelx=int(random.gauss(x,0.3))
                        channely=int(random.gauss(y,0.3))
                        if channelx>=-jetDim/2 and channelx < jetDim/2 and channely>=-jetDim/2 and channely < jetDim/2 :
-                           jetMap[lay][channelx+jetDim/2][channely+jetDim/2]+=300*1./100.
-                           trackMap[trk][lay][channelx+jetDim/2][channely+jetDim/2] +=300*1./100.
+                           jetMap[lay][channelx+jetDim/2][channely+jetDim/2]+=pixelInt
+                           trackMap[trk][lay][channelx+jetDim/2][channely+jetDim/2] +=pixelInt
                if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==0: #TODO 10 par
             #    if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==0: #TODO 4 par
             #             trackPar[trk][0] = x
@@ -301,7 +394,7 @@ if generate :
     # np.save(outfile, target_map)
 
     if one_track_only :
-        np.savez("ONETRACK_toy_MC_event_{ev}_layer{llay}_angle{angle}_4par_{seed}_300".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed), input_=input_, target_par=target_par, target_map=target_map)
+        np.savez("ONETRACK_toy_MC_event_{ev}_layer{llay}_angle{angle}_4par_{seed}_100_bkg".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed), input_=input_, target_par=target_par, target_map=target_map)
     elif one_track :
         np.savez("ONETRACK_toy_MC_event_{ev}_layer{llay}_angle{angle}_4par_{seed}".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed), input_=input_, target_par=target_par0, target_map=target_map0)
     else :
@@ -355,8 +448,10 @@ if generate==False :
         target_map= loadedfile['target_map']
 
     for jet in range(jetNum) :#TODO new implementation
-        for p in range(parNum) :
-            target_par[jet][p]+=jetDim/2     #FIXME remove jetDim/2: only for RELU activation!!!!!
+        # for p in range(parNum) :
+        #     target_par[jet][p]+=jetDim/2     #FIXME remove jetDim/2: only for RELU activation!!!!!
+        target_par[jet][0]+=jetDim/2
+        target_par[jet][1]+=jetDim/2
         # target_par[jet][1]+=jetDim/2     #FIXME remove jetDim/2: only for RELU activation!!!!!
         # for trk in range(trackNum) : #TODO multitrack
         #          target_par[jet][trk][0]+=jetDim/2     #FIXME remove jetDim/2: only for RELU activation!!!!!
@@ -391,9 +486,9 @@ if train or predict :
         dense100 = Dense(100, activation='relu')(flat)
         # dense4 = Dense(4, activation='relu')(dense100) #here the four track parameters
         dense4 = Dense(4, activation='relu')(dense100) #here the four track parameters #TODO 10par
-        dense100 = Dense(400, activation='relu')(dense4) #784
-        print (" shape", dense100.shape)
-        reshaped = Reshape((layNum, 10,10))(dense100) #28(layNum, 10,10)
+        dense400 = Dense(400, activation='relu')(dense4) #784
+        # print (" shape", dense100.shape)
+        reshaped = Reshape((layNum, 10,10))(dense400) #28(layNum, 10,10)
         deconv3_21 = Conv2DTranspose(3,21, data_format="channels_first", activation='relu', dilation_rate=2)(reshaped)
         newInput = concatenate([NNinputs,deconv3_21],axis=1)
         #conv1_1 = Conv2D(4,1,data_format="channels_first", activation='relu')(newInput)
@@ -410,9 +505,9 @@ if train or predict :
         flat = Flatten()(maxpool)
         dense100 = Dense(100, activation='relu')(flat)
         dense4 = Dense(4, activation='relu')(dense100) #here the four track parameters
-        dense100 = Dense(100, activation='relu')(dense4) #784
+        dense400 = Dense(100, activation='relu')(dense4) #784
         print (" shape", dense100.shape)
-        reshaped = Reshape((layNum, 10,10))(dense100) #28
+        reshaped = Reshape((layNum, 10,10))(dense400) #28
         deconv3_21 = Conv2DTranspose(3,21, data_format="channels_first", activation='relu', dilation_rate=2)(reshaped)
         newInput = concatenate([NNinputs,deconv3_21],axis=1)
         conv3_11 = Conv2D(3,11,data_format="channels_first", activation='relu')(newInput)
@@ -425,7 +520,10 @@ if train or predict :
     # model = Model(NNinputs,[dense4])
 
         #model = Model(NNinputs,conv1_1)
-        # model.compile('adadelta', 'mse')
+        #model.compile('adadelta', 'mse')
+    # model.compile('adam', 'mse', metrics={dense4:'metricPar'})
+    # model.compile('adam', 'mse',metrics={'dense4':'mean_squared_error', 'conv1_1':'mean_squared_error'})
+    # model.compile('adam', 'mse',metrics=[metricPar])
     model.compile('adam', 'mse')
 
     model.summary()
@@ -448,19 +546,52 @@ if train :
         history  = model.fit(input_, [target_par, target_map],  batch_size=batch_size, nb_epoch=epochs+epochs, verbose = 2, validation_split=valSplit, initial_epoch=31) #TODO map pred
         model.save_weights('toyNN_train_bis_{Seed}.h5'.format(Seed=seed))
     else :
-        history  = model.fit(input_, [target_par, target_map],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit) #TODO map pred
+        fig_counter = 0
+        pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
+
+        history  = model.fit(input_, [target_par, target_map],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit, callbacks=[validationCall()]) #TODO map pred   #target_par,target_map,input_
         #history  = model.fit(input_, [target_map],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit) #TODO map pred
         # model.fit(input_, [target_par],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit)
+        pdf_par.close()
         model.save_weights('toyNN_train_{Seed}.h5'.format(Seed=seed))
 
+    pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
+
+    plt.figure(1000)
     pylab.plot(history.history['loss'])
     pylab.plot(history.history['val_loss'])
     pylab.title('model loss')
     pylab.ylabel('loss')
     pylab.xlabel('epoch')
+    plt.grid(True)
     pylab.legend(['train', 'test'], loc='upper right')
-    pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
-    pylab.show()
+    #pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
+    pdf_loss.savefig(1000)
+    # pylab.show()
+
+    plt.figure(1001)
+    pylab.plot(history.history['dense_2_loss'])
+    pylab.plot(history.history['val_dense_2_loss'])
+    pylab.title('model loss (parameters)')
+    pylab.ylabel('loss')
+    pylab.xlabel('epoch')
+    plt.grid(True)
+    pylab.legend(['train', 'test'], loc='upper right')
+    # pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
+    pdf_loss.savefig(1001)
+
+    plt.figure(1002)
+    pylab.plot(history.history['conv2d_5_loss'])
+    pylab.plot(history.history['val_conv2d_5_loss'])
+    pylab.title('model loss (maps)')
+    pylab.ylabel('loss')
+    pylab.xlabel('epoch')
+    plt.grid(True)
+    pylab.legend(['train', 'test'], loc='upper right')
+    # pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
+    pdf_loss.savefig(1002)
+
+    pdf_loss.close()
 
 if predict :
 
