@@ -98,14 +98,14 @@ wH = wHistory()
 
 
 batch_size = 128 # Batch size for training.
-epochs = 30  # Number of epochs to train for.
+epochs = 200  # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 
 import random
 random.seed(seed)
 
-jetNum=500000#100000
+jetNum=500000
 valSplit=0.2
 
 
@@ -152,6 +152,7 @@ if generate :
         jetPar = np.zeros(shape=(jetDim, jetDim,trackNum,parNum+1))
 
         trackPar= np.zeros(shape=(trackNum,parNum))
+        xy_add= np.zeros(shape=(trackNum,parNum-2))
 
         jetDirR=random.uniform(0,openAngle)
         jetDirPhi=random.uniform(0,2*math.pi)
@@ -192,49 +193,69 @@ if generate :
                        channely=int(random.gauss(y,0.3))
                        if channelx>=-jetDim/2 and channelx < jetDim/2 and channely>=-jetDim/2 and channely < jetDim/2 :
                            jetMap[channelx+jetDim/2][channely+jetDim/2][lay]+=pixelInt
-               if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==3:
-                    thetaX = math.atan(math.tan(trackDirR[trk])*math.sin(trackDirPhi[trk]))
-                    thetaY = math.atan(math.tan(trackDirR[trk])*math.cos(trackDirPhi[trk]))
+               if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==0:
+                   xy_add[trk] = (x,y)
+               if x>=-jetDim/2 and x < jetDim/2 and y>=-jetDim/2 and y < jetDim/2  and lay==1:
+                    # thetaX = math.atan(math.tan(trackDirR[trk])*math.sin(trackDirPhi[trk]))
+                    # thetaY = math.atan(math.tan(trackDirR[trk])*math.cos(trackDirPhi[trk]))
+                    thetaX = math.atan((x-xy_add[trk][0])/layDist)
+                    thetaY = math.atan((y-xy_add[trk][1])/layDist)
                     trackPar[trk] = (x+jetDim/2,y+jetDim/2,thetaX,thetaY)
                     # print("generated (x,y)= ", x+jetDim/2, y+jetDim/2)
-               elif lay == 3:
+               elif lay == 1:
                    print("out of window range:",x,y, lay, trk)
                 #    trackPar[trk] = (jetDim/2,jetDim/2,0,0)
                    trackPar[trk] = (-999,-999,-999,-999)
 
         for x in range(jetDim) :
             for y in range(jetDim) :
+                pixObj = []
+                pixPar = np.zeros(shape=(trackNum,parNum+1))
+                dist4sort = np.zeros(shape=(trackNum))
                 for trk in range(nTracks) :
                     if int(trackPar[trk][0]) == x and int(trackPar[trk][1]) == y :
-                        jetPar[x][y][trk][4] = 1
-                        # print("flag1 (x,y)",x,y)
+                        pixPar[trk][4] = 1
                     else :
-                        jetPar[x][y][trk][4] = 0
+                        pixPar[trk][4] = 0
                     xp = x + 0.5
                     yp = y + 0.5
                     distX =  trackPar[trk][0] -xp
                     distY = trackPar[trk][1] - yp
+                    dist4sort[trk] = math.sqrt(distX**2+distY**2)
 
                     if abs(distX)<=distThr and abs(distY)<=distThr :
-                        jetPar[x][y][trk][0] = distX
-                        jetPar[x][y][trk][1] = distY
-                        jetPar[x][y][trk][2] = trackPar[trk][2]
-                        jetPar[x][y][trk][3] = trackPar[trk][3]
+                        pixPar[trk][0] = distX
+                        pixPar[trk][1] = distY
+                        pixPar[trk][2] = trackPar[trk][2]
+                        pixPar[trk][3] = trackPar[trk][3]
                         # if(jetPar[x][y][trk][4] ==1) :
                         #     print("recorded (x,y)",distX,distY)
                     else :
                         for p in range(parNum) :
-                            jetPar[x][y][trk][p] = 0.0
+                            pixPar[trk][p] = 0.0
                     if(trackPar[trk][0] == -999 and trackPar[trk][1] == -999 and trackPar[trk][2] == -999 and trackPar[trk][3] == -999) :
                     # if(trackPar[trk][0] == 0. and trackPar[trk][1] == 0. and trackPar[trk][2] == 0. and trackPar[trk][3] == 0.) :
                         # jetPar[x][y][trk][4] = 0
                         for p in range(parNum+1) :
-                            jetPar[x][y][trk][4] = 0.0
+                            pixPar[trk][4] = 0.0
+                    pixObj.append((pixPar[trk],dist4sort[trk]))
+                # if dist4sort[0] <1 or dist4sort[1] <1 or dist4sort[2] <1 :
+                    # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX=",x)
+                    # print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY=",y)
+                    # print("PIXOBJ",pixObj)
+                pixObj = sorted(pixObj, key= (lambda( pixObj) : pixObj[1]), reverse=False)
+                pixParSorted = np.zeros(shape=(trackNum,parNum+1))
+                dist4sortSorted = np.zeros(shape=(trackNum))
+                for trk in range(trackNum) :
+                    (pixParSorted[trk],dist4sortSorted[trk]) = pixObj[trk]
+                # if dist4sort[0] <1 or dist4sort[1] <1 or dist4sort[2] <1 :
+                    # print("SORTED",pixParSorted)
+                jetPar[x][y] = pixParSorted
 
         input_[i] = jetMap
         target_[i] = jetPar
 
-    np.savez("yoloJet_MC_event_{ev}_layer{llay}_angle{angle}_{seed}".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed), input_=input_, target_=target_)
+    np.savez("yoloJet_MC_event_{ev}_layer{llay}_angle{angle}_{seed}_new_lay2".format(ev=jetNum,llay=layNum, angle=openAngle, seed=seed), input_=input_, target_=target_)
 
 
 
@@ -257,12 +278,21 @@ if generate==False :
 
 if train or predict :
 
+    # NNinputs = Input(shape=(jetDim,jetDim,layNum))
+    # conv30_9 = Conv2D(30,9, data_format="channels_last", input_shape=(jetDim,jetDim,layNum), activation='relu',padding="same")(NNinputs)
+    # conv30_7 = Conv2D(30,7, data_format="channels_last", activation='relu',padding="same")(conv30_9)
+    # conv30_5 = Conv2D(30,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)
+    # conv20_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
+    # conv15_5 = Conv2D(15,5, data_format="channels_last", activation='relu',padding="same")(conv20_5)
+    # conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_5)
+    # reshaped = Reshape((30,30,trackNum,parNum+1))(conv15_3)
+
     NNinputs = Input(shape=(jetDim,jetDim,layNum))
-    conv30_9 = Conv2D(30,9, data_format="channels_last", input_shape=(jetDim,jetDim,layNum), activation='relu',padding="same")(NNinputs)
-    conv30_7 = Conv2D(30,7, data_format="channels_last", activation='relu',padding="same")(conv30_9)
-    conv30_5 = Conv2D(30,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)
-    conv20_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
-    conv15_5 = Conv2D(15,5, data_format="channels_last", activation='relu',padding="same")(conv20_5)
+    conv30_9 = Conv2D(20,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum), activation='relu',padding="same")(NNinputs)
+    conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
+    conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)
+    conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
+    conv15_5 = Conv2D(15,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
     conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_5)
     reshaped = Reshape((30,30,trackNum,parNum+1))(conv15_3)
 
@@ -281,17 +311,17 @@ if train or predict :
 #     ])
 
 #-----------------------------------------NN TRAINING and PREDICITION -----------------------------------#
-continue_training = False
+continue_training = True
 if train :
     if continue_training :
-        model.load_weights('toyNN_train_{Seed}.h5'.format(Seed=seed))
-        history  = model.fit(input_, target_,  batch_size=batch_size, nb_epoch=epochs+epochs, verbose = 2, validation_split=valSplit, initial_epoch=31) #TODO map pred
+        model.load_weights('toyNN_train_{Seed}_lay2.h5'.format(Seed=seed))
+        history  = model.fit(input_, target_,  batch_size=batch_size, nb_epoch=epochs+epochs, verbose = 2, validation_split=valSplit, initial_epoch=epochs+1) #TODO map pred
         model.save_weights('toyNN_train_bis_{Seed}.h5'.format(Seed=seed))
     else :
         pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
         history  = model.fit(input_, target_,  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit)#, callbacks=[validationCall()])
         pdf_par.close()
-        model.save_weights('toyNN_train_{Seed}.h5'.format(Seed=seed))
+        model.save_weights('toyNN_train_{Seed}_lay2.h5'.format(Seed=seed))
 
     pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
     plt.figure(1000)
@@ -311,7 +341,7 @@ if train :
 if predict :
 
     if train == False :
-        model.load_weights('toyNN_train_{Seed}.h5'.format(Seed=seed))
+        model.load_weights('toyNN_train_{Seed}_lay2.h5'.format(Seed=seed))
 
     validation_par = model.predict(input_)
 
@@ -343,6 +373,8 @@ if output :
      mapTot = []
      graphTargetTot = []
      mapProbPredTot = []
+     graphPredTot = []
+
 
      for jet in range(numPrint) :
 
@@ -351,6 +383,8 @@ if output :
          graphTargetTot_jet = []
          canvasProb_jet =[]
          mapProbPredTot_jet =[]
+         graphPredTot_jet = []
+
 
          for trk in range(trackNum) :
             canvasProb_jet.append(TCanvas("canvasProb_%d_%d" % (jet,trk), "canvasProb_%d_%d" % (jet,trk), 600,800))
@@ -361,36 +395,58 @@ if output :
              mapTot_jet.append(TH2F("mapTot_%d_%d" % (jet, lay), "mapTot_%d_%d" % (jet, lay), jetDim,-jetDim/2,jetDim/2,jetDim,-jetDim/2,jetDim/2))
              canvasTot_jet.append(TCanvas("canvasTot_%d_%d" % (jet, lay), "canvasTot_%d_%d" % (jet, lay), 600,800))
              graphTargetTot_jet.append(TGraph(trackNum))
+             graphPredTot_jet.append(TGraph(trackNum*3))
 
          mapTot.append(mapTot_jet)
          canvasTot.append(canvasTot_jet)
          graphTargetTot.append(graphTargetTot_jet)
          mapProbPredTot.append(mapProbPredTot_jet)
          canvasProb.append(canvasProb_jet)
+         graphPredTot.append(graphPredTot_jet)
+
+
+
 
 
      for jet in range(numPrint) :
          print("--------------------------------")
          j_eff = jet+validation_offset
-         j_eff = jet
+         #j_eff = jet
          for lay in range(layNum) :
+             tarPoint = 0
+             predPoint = 0
+             graphPredTot[jet][lay].SetMarkerColor(3)
+             graphPredTot[jet][lay].SetMarkerStyle(28)
+             graphPredTot[jet][lay].SetMarkerSize(3)
+             graphTargetTot[jet][lay].SetMarkerColor(2)
+             graphTargetTot[jet][lay].SetMarkerStyle(2)
+             graphTargetTot[jet][lay].SetMarkerSize(3)
              for x in range(jetDim) :
                  for y in range(jetDim) :
                      mapTot[jet][lay].SetBinContent(x+1,y+1,input_[j_eff][x][y][lay])
                      for trk in range(trackNum) :
-                         if lay==3 :
+
+                        #  if lay==3 :
                              mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_par[j_eff][x][y][trk][4])
                              if validation_par[j_eff][x][y][trk][4]>0.9 :
                                  print("prediction>0.5 (x,y)=",x,y)
-
-                             graphTargetTot[jet][lay].SetMarkerColor(2)
-                             graphTargetTot[jet][lay].SetMarkerStyle(2)
-                             graphTargetTot[jet][lay].SetMarkerSize(3)
                              if target_[j_eff][x][y][trk][4] == 1 :
-                                 xx= target_[j_eff][x][y][trk][0]
-                                 yy= target_[j_eff][x][y][trk][1]
-                                 print("TARGET_{TRK}_ (x,y)=".format(TRK=trk),x,y,xx,yy)
-                                 graphTargetTot[jet][lay].SetPoint(trk,x+xx-jetDim/2,y+yy-jetDim/2)
+                                 xx= target_[j_eff][x][y][trk][0]-layDist*(1-lay)*math.tan(target_[j_eff][x][y][trk][2])
+                                 yy= target_[j_eff][x][y][trk][1]-layDist*(1-lay)*math.tan(target_[j_eff][x][y][trk][3])
+                                 print("TARGET_{TRK}_{LAY}_(x,y)=".format(TRK=tarPoint, LAY=lay),x,y,xx,yy)
+                                 graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
+                                 tarPoint = tarPoint+1
+                             if validation_par[j_eff][x][y][trk][4] > 0.05 :
+                                xx= validation_par[j_eff][x][y][trk][0]-layDist*(1-lay)*math.tan(validation_par[j_eff][x][y][trk][2])
+                                yy= validation_par[j_eff][x][y][trk][1]-layDist*(1-lay)*math.tan(validation_par[j_eff][x][y][trk][3])
+                                print("PREDICTION_{TRK}_{LAY}_(x,y)=".format(TRK=predPoint, LAY=lay),x,y,xx,yy)
+                                # print("difference theta X=",validation_par[j_eff][x][y][trk][2]-target_[j_eff][x][y][trk][2])
+                                # print("difference theta Y=",validation_par[j_eff][x][y][trk][3]-target_[j_eff][x][y][trk][3])
+                                graphPredTot[jet][lay].SetPoint(predPoint,x+xx-jetDim/2,y+yy-jetDim/2)
+                                print("pred point =",predPoint, lay, trk,)
+
+                                predPoint = predPoint+1
+
 
      output_file = TFile("toyNN_{Seed}.root".format(Seed=seed),"recreate")
 
@@ -400,8 +456,8 @@ if output :
              mapTot[jet][lay].GetXaxis().SetRangeUser(-jetDim,jetDim)
              mapTot[jet][lay].GetYaxis().SetRangeUser(-jetDim,jetDim)
              mapTot[jet][lay].Draw("colz")
-             if(lay ==3 ) :
-                 graphTargetTot[jet][lay].Draw("SAME P")
+             graphTargetTot[jet][lay].Draw("SAME P")
+             graphPredTot[jet][lay].Draw("SAME P")
              canvasTot[jet][lay].Write()
 
          for trk in range(trackNum) :
@@ -409,7 +465,8 @@ if output :
              mapProbPredTot[jet][trk].GetXaxis().SetRangeUser(-jetDim,jetDim)
              mapProbPredTot[jet][trk].GetYaxis().SetRangeUser(-jetDim,jetDim)
              mapProbPredTot[jet][trk].Draw("colz")
-             graphTargetTot[jet][3].Draw("SAME P")
+             graphTargetTot[jet][1].Draw("SAME P")
+             graphPredTot[jet][1].Draw("SAME P")
              canvasProb[jet][trk].Write()
 
      output_file.Close()
