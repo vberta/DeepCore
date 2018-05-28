@@ -98,7 +98,7 @@ class wHistory(keras.callbacks.Callback):
 wH = wHistory()
 
 
-batch_size = 128 # Batch size for training.
+batch_size = 10 # Batch size for training.
 epochs =  100 # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
@@ -106,35 +106,51 @@ latent_dim = 70 # Latent dimensionality of the encoding space.
 import random
 random.seed(seed)
 
-jetNum=300
+jetNum=5000
 valSplit=0.2
 
 jetDim=30
 trackNum =3# 10
-genTrackNum=5
+genTrackNum=3
 
 layNum = 4
 parNum = 4
+
+prob_thr =0.4
 
 input_ = np.zeros(shape=(jetNum, jetDim,jetDim,layNum)) #jetMap
 target_ = np.zeros(shape=(jetNum,jetDim, jetDim,trackNum,parNum))#+1
 target_prob = np.zeros(shape=(jetNum,jetDim,jetDim,trackNum))
 
-openAngle=1#1 #NB never over pi/2!!!
+openAngle=1#1 #NB never above pi/2!!!
 layDist=3 #8 #3 is CMS
 xyoff=1
 bkgNum = 4
 pixelInt = 100*1./100.
+
+efficiency_4 = np.zeros(epochs)
+fake_rate_4 = np.zeros(epochs)
+
+efficiency_8 =  np.zeros(epochs)
+fake_rate_8 = np.zeros(epochs)
 
 class validationCall(Callback) :
     def on_epoch_end(self,epoch, logs={}) :
         [call_par, call_prob] = self.model.predict(input_)
 
         for par in range(parNum) :
-            bins = np.zeros(shape=(int(jetNum*valSplit)))
+            bins = []# np.zeros(shape=(int(jetNum*valSplit)))
+            nbin =0
             for j in range (int(jetNum*valSplit)) :
                 j_eff = j+int(jetNum*(1-valSplit))
-                bins[j] = call_par[j_eff][par] - target_par[j_eff][par]
+                for x in range(jetDim) :
+                    for y in range(jetDim) :
+                        for trk in range(trackNum) :
+                            if call_prob[j_eff][x][y][trk] > prob_thr :
+                                if call_par[j_eff][x][y][trk][0] != 0 or call_par[j_eff][x][y][trk][1] != 0  or call_par[j_eff][x][y][trk][2] != 0 or call_par[j_eff][x][y][3] != 0 :
+                                    bins.append(call_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])
+                                    nbin = nbin+1
+
             plt.figure()
             pylab.hist(bins,100, facecolor='green', alpha=0.75)
             pylab.title('parNum error distribution_ep{EPOCH}_par{PAR}'.format(PAR=par,EPOCH=epoch))
@@ -143,6 +159,54 @@ class validationCall(Callback) :
             plt.grid(True)
             # pylab.savefig("parameter_error_{EPOCH}_{PAR}.pdf".format(PAR=par,EPOCH=epoch))
             pdf_par.savefig()
+
+        N_eff_4 = 0
+        N_eff_8 = 0
+        N_fake_4 =0
+        N_fake_8 = 0
+        N_tot_eff = jetNum*valSplit*genTrackNum
+        N_tot_fake = 0
+        for j in range (int(jetNum*valSplit)) :
+            j_eff = j+int(jetNum*(1-valSplit))
+            for x in range(jetDim) :
+                for y in range(jetDim) :
+                    for trk in range(trackNum) :
+                        if target_prob[j_eff][x][y][trk]==1 :
+                            chi2x = (call_par[j_eff][x][y][trk][0] - target_[j_eff][x][y][trk][0])**2
+                            chi2y = (call_par[j_eff][x][y][trk][1] - target_[j_eff][x][y][trk][1])**2
+                            chi2xt = (call_par[j_eff][x][y][trk][2] - target_[j_eff][x][y][trk][2])**2 / math.atan(2/float(layDist*3))
+                            chi2yt = (call_par[j_eff][x][y][trk][3] - target_[j_eff][x][y][trk][3])**2 / math.atan(2/float(layDist*3))
+                            chi2 = chi2x+chi2y+chi2xt+chi2yt
+                            if chi2<=4  and call_prob[j_eff][x][y][trk]>prob_thr:
+                                N_eff_4 = N_eff_4 +1
+                            if chi2<=8  and call_prob[j_eff][x][y][trk]>prob_thr:
+                                N_eff_8 = N_eff_8 +1
+                        if call_prob[j_eff][x][y][trk] > prob_thr :
+                            N_tot_fake = N_tot_fake +1
+                            chi2x = (call_par[j_eff][x][y][trk][0] - target_[j_eff][x][y][trk][0])**2
+                            chi2y = (call_par[j_eff][x][y][trk][1] - target_[j_eff][x][y][trk][1])**2
+                            chi2xt = (call_par[j_eff][x][y][trk][2] - target_[j_eff][x][y][trk][2])**2 / math.atan(2/float(layDist*3))
+                            chi2yt = (call_par[j_eff][x][y][trk][3] - target_[j_eff][x][y][trk][3])**2 / math.atan(2/float(layDist*3))
+                            chi2 = chi2x+chi2y+chi2xt+chi2yt
+                            if chi2>=4  and target_prob[j_eff][x][y][trk]==1:
+                                print("fake 4!")
+                                N_fake_4 = N_fake_4 +1
+                            if chi2>=8  and target_prob[j_eff][x][y][trk]==1:
+                                print("fake 8!")
+                                N_fake_8 = N_fake_8 +1
+
+        efficiency_4[epoch] = N_eff_4/N_tot_eff
+        if N_tot_fake == 0 :
+            fake_rate_4[epoch] = 1
+        else :
+           fake_rate_4[epoch] = N_fake_4/N_tot_fake
+
+        efficiency_8[epoch] = N_eff_8/N_tot_eff
+        if N_tot_fake == 0  :
+            fake_rate_8[epoch] = 1
+        else :
+           fake_rate_8[epoch] = N_fake_8/N_tot_fake
+
 
 
 #------------------------------------------------ TOY MC DEFINITION ------------------------------------------------#
@@ -339,6 +403,17 @@ if train or predict :
     conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(conv15_3_3)
     reshaped = Reshape((30,30,trackNum,parNum))(conv15_3)
 
+    # conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
+    # noise1 = Dropout(0.8)(conv15_3_1)
+    # conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(noise1)
+    # conv15_3_3 = Conv2D(12,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2)
+    # noise2 = Dropout(0.8)(conv15_3_3)
+    # conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(noise2)
+    # reshaped = Reshape((30,30,trackNum,parNum))(conv15_3)
+
+    # conv15_3_1 = Conv2D(12,3, data_format="channels_last", padding="same")(conv15_5)
+    # reshaped = Reshape((30,30,trackNum,parNum))(conv15_3_1)
+
     # conv1_3_1 = Conv2D(12,3, data_format="channels_last", activation='relu', padding="same")(conv15_5)
     # conv1_3_2 = Conv2D(9,3, data_format="channels_last", activation='relu', padding="same")(conv1_3_1)
     # conv1_3_3 = Conv2D(7,3, data_format="channels_last", activation='relu',padding="same")(conv1_3_2)
@@ -350,9 +425,9 @@ if train or predict :
 
     model = Model(NNinputs,[reshaped,reshaped_prob])
 
-    # anubi = keras.optimizers.Adam(lr=0.00001)
+    #anubi = keras.optimizers.Adam(lr=0.001)
 
-    # model.compile(optimizer=anubi, loss=['mse','binary_crossentropy'], loss_weights=[1,100]) #0.01,100
+    #model.compile(optimizer=anubi, loss=['mse','binary_crossentropy'], loss_weights=[1,1]) #0.01,100
     model.compile(optimizer='adam', loss=['mse','binary_crossentropy'], loss_weights=[1,1]) #0.01,100
 
 
@@ -368,20 +443,20 @@ if train or predict :
 
 #-----------------------------------------NN TRAINING and PREDICITION -----------------------------------#
 continue_training = False
-combined_training = True
+combined_training = False
 if train :
     if continue_training :
         model.load_weights('toyNN_train_{Seed}_lay2_comp.h5'.format(Seed=seed))
-        history  = model.fit(input_, [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+epochs, verbose = 2, validation_split=valSplit, initial_epoch=epochs+1) #TODO map pred
+        history  = model.fit(input_, [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+epochs, verbose = 2, validation_split=valSplit, initial_epoch=epochs+1,  callbacks=[validationCall()])
         model.save_weights('toyNN_train_bis_{Seed}_lay2_comp.h5'.format(Seed=seed))
     elif combined_training :
         # model.load_weights('toyNN_train_bis_17_lay2_comp.h5')
         model.load_weights('toyNN_train_COMB_8_lay2_comp.h5')
-        history  = model.fit(input_, [target_,target_prob],  batch_size=batch_size, nb_epoch=230+epochs, verbose = 2, validation_split=valSplit, initial_epoch=230+1) #TODO map pred
+        history  = model.fit(input_, [target_,target_prob],  batch_size=batch_size, nb_epoch=230+epochs, verbose = 2, validation_split=valSplit, initial_epoch=230+1,  callbacks=[validationCall()])
         model.save_weights('toyNN_train_COMB_{Seed}_bis_lay2_comp.h5'.format(Seed=seed))
     else :
         pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
-        history  = model.fit(input_, [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit)#, callbacks=[validationCall()])
+        history  = model.fit(input_, [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[validationCall()])#, callbacks=[validationCall()])
         pdf_par.close()
         model.save_weights('toyNN_train_{Seed}_lay2_comp.h5'.format(Seed=seed))
 
@@ -435,6 +510,27 @@ if train :
     # pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
     pdf_loss.savefig(1002)
 
+    plt.figure(1003)
+    pylab.plot(efficiency_4)
+    pylab.plot(efficiency_8)
+    pylab.title('Efficiency of track finding')
+    pylab.ylabel('Efficiency')
+    pylab.xlabel('epoch')
+    plt.grid(True)
+    pylab.legend(['thr=4', 'thr=8'], loc='upper left')
+    pdf_loss.savefig(1003)
+
+
+    plt.figure(1004)
+    pylab.plot(fake_rate_4)
+    pylab.plot(fake_rate_8)
+    pylab.title('Fake Rate')
+    pylab.ylabel('Fake Rate')
+    pylab.xlabel('epoch')
+    plt.grid(True)
+    pylab.legend(['thr=4', 'thr=8'], loc='upper right')
+    pdf_loss.savefig(1004)
+
     pdf_loss.close()
 
 
@@ -443,8 +539,9 @@ if predict :
     if train == False :
         # model.load_weights('toyNN_train_{Seed}_lay2_comp.h5'.format(Seed=seed)
         #model.load_weights('toyNN_train_COMB_8_lay2_comp.h5')
-        model.load_weights('toyNN_train_COMB_8_bis_lay2_comp.h5')
 
+        # model.load_weights('toyNN_train_COMB_8_bis_lay2_comp.h5')
+        model.load_weights('toyNN_train_15_lay2_comp.h5')
 
 
     [validation_par,validation_prob] = model.predict(input_)
@@ -552,7 +649,7 @@ if output :
                                  graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
                                  tarPoint = tarPoint+1
                             #  if validation_par[j_eff][x][y][trk][4] > 0.05 :
-                             if validation_prob[j_eff][x][y][trk] > 0.4 :
+                             if validation_prob[j_eff][x][y][trk] > prob_thr :
                                  xx_pr= validation_par[j_eff][x][y][trk][0]-layDist*(1-lay)*math.tan(validation_par[j_eff][x][y][trk][2])
                                  yy_pr= validation_par[j_eff][x][y][trk][1]-layDist*(1-lay)*math.tan(validation_par[j_eff][x][y][trk][3])
                                  # print("PREDICTION_{TRK}_{LAY}_(x,y)=".format(TRK=predPoint, LAY=lay),x,y,xx,yy)
