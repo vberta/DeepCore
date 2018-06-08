@@ -19,7 +19,7 @@ from root_numpy import *
 from root_numpy import testdata
 
 
-jetNum=50
+jetNum=1000
 valSplit=0.2
 
 jetDim=200
@@ -257,7 +257,7 @@ if output :
                  for y in range(jetDim) :
                      mapTot[jet][lay].SetBinContent(x+1,y+1,input_[j_eff][x][y][lay])
                      if(lay==1 and input_[j_eff][x][y][lay]!=0 ) :
-                         print("map, x,y=", x+1-jetDim/2,y+1-jetDim/2, "(", x,y,")")
+                         print("map, x,y=", x+1-jetDim/2,y+1-jetDim/2, "(", x,y,")", "charge=", input_[j_eff][x][y][lay]!=0)
                     #  if(input_[j_eff][x][y][lay]!=0) :
                     #      print("input,x,y,lay, val=",x,y,lay, input_[j_eff][x][y][lay])
                      for trk in range(trackNum) :
@@ -271,11 +271,12 @@ if output :
                             #  if validation_prob[j_eff][x][y][trk]>0.9 :
                             #       print("prediction>0.9 (x,y)=",x,y)
                             #  if target_[j_eff][x][y][trk][4] == 1 :
-                             if target_prob[j_eff][x][y][trk] == 1 :
+                            #  if target_prob[j_eff][x][y][trk] != 0 :
+                            if(target_[j_eff][x][y][trk][0]!=0 or target_[j_eff][x][y][trk][1] or target_prob[j_eff][x][y][trk] != 0 ) :
                                 #  xx= target_[j_eff][x][y][trk][0]-layDist*(1-lay)*math.tan(target_[j_eff][x][y][trk][2])
                                 #  yy= target_[j_eff][x][y][trk][1]-layDist*(1-lay)*math.tan(target_[j_eff][x][y][trk][3])
                                  if(lay==1) :
-                                    print("prob1, x,y=", x-jetDim/2,y-jetDim/2, "(", x,y,")")
+                                    print("prob1, x,y=", x-jetDim/2,y-jetDim/2, "(", x,y,")", " prob=", target_prob[j_eff][x][y][trk], ", parX=", target_[j_eff][x][y][trk][0], " parY=",target_[j_eff][x][y][trk][1], target_[j_eff][x][y][trk][2], target_[j_eff][x][y][trk][3])
                                     xx = target_[j_eff][x][y][trk][0]
                                     yy = target_[j_eff][x][y][trk][1]
                                 #  print("TARGET_{TRK}_{LAY}_(x,y)=".format(TRK=tarPoint, LAY=lay),x,y,xx,yy)
@@ -320,3 +321,27 @@ if output :
             #  graphTargetTot[jet][1].Write("P")
 
      output_file.Close()
+
+     z_tot =0
+     z_tot_p=0
+     for jet in range(jetNum) :
+        z_count = 0
+        z_count_p= 0
+        tot = (jetDim*jetDim*trackNum)
+        for x in range(jetDim) :
+            for y in range(jetDim) :
+                for trk in range (trackNum) :
+                    for par in range(parNum) :
+                        if(target_[jet][x][y][trk][par]==0) :
+                            z_count = z_count+1;
+                    if(target_prob[jet][x][y][trk]==0) :
+                        z_count_p = z_count_p+1;
+
+        frac = z_count/float(tot*parNum);
+        frac_p = z_count_p/float(tot);
+        print("jet=",jet, ", 0_par=",z_count, ", 0_prob=",z_count_p, ", frac_par=",frac, ", frac_prob=",frac_p)
+        z_tot = z_tot+z_count
+        z_tot_p = z_tot_p+z_count_p
+     frac_tot=z_tot/float(tot*jetNum*parNum)
+     frac_tot_p=z_tot_p/float(tot*jetNum)
+     print("TOTAL: zeros_par=",z_tot,", z_prob=",z_tot_p,", frac_par=",frac_tot,", frac_prob=",frac_tot_p )
