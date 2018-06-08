@@ -103,7 +103,7 @@ wH = wHistory()
 
 
 batch_size = 32 # Batch size for training. //32 is the good
-epochs =  50 # Number of epochs to train for.
+epochs =  100 # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 
@@ -401,15 +401,16 @@ if train or predict :
 #     ])
 
 #-----------------------------------------NN TRAINING and PREDICITION -----------------------------------#
-continue_training = False
+continue_training = True
 combined_training = False
 
 checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=True)
 if train :
     if continue_training :
-        model.load_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
-        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+20, verbose = 2, validation_split=valSplit,  initial_epoch=20+1, callbacks=[checkpointer],class_weight={'reshaped':{},'reshaped_prob':{0:1,1:6}})  #, callbacks=[validationCall()])
-        model.save_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
+        model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
+        #model.load_weights('weights.16-0.00.hdf5')
+        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+70, verbose = 2, validation_split=valSplit,  initial_epoch=70, callbacks=[checkpointer],class_weight={'reshaped':{},'reshaped_prob':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        model.save_weights('NNPixSeed_train_event_{ev}_tris.h5'.format(ev=jetNum))
     # elif combined_training :
     #     # model.load_weights('toyNN_train_bis_17_lay2_comp.h5')
     #     model.load_weights('toyNN_train_COMB_8_lay2_comp.h5')
@@ -417,7 +418,7 @@ if train :
     #     model.save_weights('toyNN_train_COMB_{Seed}_bis_lay2_comp.h5'.format(Seed=seed))
     else :
         # pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
-        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer],class_weight={'reshaped':{},'reshaped_prob':{0:1,1:4}})  #, callbacks=[validationCall()])
+        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer],class_weight={'reshaped':{},'reshaped_prob':{0:1,1:2000}})  #, callbacks=[validationCall()])
         # pdf_par.close()
         model.save_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
 
@@ -490,8 +491,8 @@ if predict :
     print("prediction: start ")
 
     if train == False :
-        model.load_weights('weights.06-0.00.hdf5')
-        # model.load_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
+        model.load_weights('weights.115-0.00.hdf5')
+        #model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
         #model.load_weights('../new_deltaphi/NNPixSeed_train_event_1000.h5')
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
