@@ -27,7 +27,10 @@ from  matplotlib import pyplot as plt
 import pylab
 import glob
 
-
+from tensorflow.python.framework import ops
+from tensorflow.python.ops import clip_ops
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import nn
 
 #######################################
 #
@@ -103,7 +106,7 @@ wH = wHistory()
 
 
 batch_size = 32 # Batch size for training. //32 is the good
-epochs =  100 # Number of epochs to train for.
+epochs =  200 # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 
@@ -223,16 +226,40 @@ class validationCall(Callback) :
 
 
 
-# _EPSILON = K.epsilon()
-# def loss_mse_sel(y_true, y_pred,y_weight):
-#     y_pred = np.clip(y_pred, _EPSILON, 1.0-_EPSILON)
-#     out = K.square(y_pred - y_true)*(y_weight)
-#     return K.mean(out, axis=-1)
+
+_EPSILON = 1e-7
+
+def _to_tensor(x, dtype):
+    return ops.convert_to_tensor(x, dtype=dtype)
+
+def epsilon():
+    return _EPSILON
+
+def loss_weighted_crossentropy(target, output):
+    epsilon_ = _to_tensor(epsilon(), output.dtype.base_dtype)
+    output = clip_ops.clip_by_value(output, epsilon_, 1 - epsilon_)
+    output = math_ops.log(output / (1 - output))
+    return nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=2900)
+
+
+def loss_mse_weight(y_weight) :
+    _epsilon = K.epsilon()
+    def loss_mse(y_true, y_pred):
+        # y_pred = np.clip(y_pred, _epsilon, 1.0-_epsilon)
+        y_pred = clip_ops.clip_by_value(y_pred, _epsilon, 1 - _epsilon)
+        out = K.square(y_pred - y_true)*(y_weight)
+        return K.mean(out, axis=-1)
+    return loss_mse
 #altra idea: aggiungi vettore al target e poi lo splitti dentro la loss in 2 sotto vettori e fai l'mse di quelli.
 
+# def loss_mse_select(y_true, y_pred) :
+#     _epsilon = K.epsilon()
+#     y_pred = clip_ops.clip_by_value(y_pred, _epsilon, 1 - _epsilon)
+#     out = K.square(y_pred[:-1] - y_true[:-1])*(y_true[:end])
+#     return K.mean(out, axis=-1)
 
 #--------------------------------------------- INPUT from ROOT conversion-------------------------------#
-gpu=True
+gpu=False
 if convert :
 
     import ROOT
@@ -252,6 +279,21 @@ if convert :
     target_=rec2array(target_)
     target_prob = tree2array(tree, branches=['trackProb'])
     target_prob =rec2array(target_prob)
+
+    print("start creation weight")
+    target_loss_w = np.zeros(shape=(int(len(input_)),jetDim, jetDim,trackNum,parNum))#+1
+    for j in range (int(len(input_))) :
+        for x in range(jetDim) :
+            for y in range(jetDim) :
+                for par in range(parNum) :
+                    for trk in range(trackNum) :
+                        if target_[j][x][y][trk][0] == 0.0  and target_[j][x][y][trk][1] == 0.0  and target_[j][x][y][trk][2] == 0.0  and target_[j][x][y][trk][3] == 0.0 :
+                            target_loss_w[j][x][y][trk][par] = 0.0
+                        else :
+                            target_loss_w[j][x][y][trk][par] = 1.0
+
+    print("end creation weight")
+
 
 
     print("input shape=", input_.shape)
@@ -273,9 +315,12 @@ if convert :
     print("loading data: completed")
 
     if(gpu==False) :
-        np.savez("NNPixSeed_event_{ev}".format(ev=jetNum), input_=input_, input_jeta=input_jeta, input_jpt=input_jpt, target_=target_, target_prob =target_prob)
+        np.savez("NNPixSeed_event_{ev}".format(ev=jetNum), input_=input_, input_jeta=input_jeta, input_jpt=input_jpt, target_=target_, target_prob =target_prob, target_loss_w=target_loss_w)
 
     print("saving data: completed")
+
+
+
 
 
 
@@ -291,6 +336,7 @@ if convert==False and gpu==True:
     input_jpt= loadedfile['input_jpt']
     target_= loadedfile['target_']
     target_prob= loadedfile['target_prob']
+    target_loss_w = loadedfile['target_loss_w']
 
     # for jet in range(jetNum) :
     #     for trk in range(trackNum) :
@@ -300,8 +346,10 @@ if convert==False and gpu==True:
 
     print("loading data: completed")
 
+
     test_sample_creation = False
     if test_sample_creation == True:
+        print("testing sample creation:")
         for jj in range (jetNum_test) :
             j = jj+(int(len(input_))-jetNum_test-5)
             input_jeta_test[jj] = input_jeta[j]
@@ -317,9 +365,30 @@ if convert==False and gpu==True:
         np.savez("NNPixSeed_event_{ev}_test".format(ev=jetNum_test), input_=input_test, input_jeta=input_jeta_test, input_jpt=input_jpt_test, target_=target_test, target_prob =target_prob_test)
 
 
+
+    average_1_eval = False
+    if(average_1_eval==True) :
+        aver1=0
+        print("evaluation of the number of 1")
+        for j in range (int(len(input_))) :
+            averjet = 0
+            for x in range(jetDim) :
+                for y in range(jetDim) :
+                        # for trk in range(trackNum) :
+                        if target_prob[j][x][y][0]==1 :
+                            averjet = averjet+1
+            averjet = float(averjet)/float(jetDim*jetDim)
+            aver1= aver1+averjet
+        print("average of the number of 1", aver1)
+        aver1 = float(aver1)/float(len(input_))
+        print("average of the number of 1", aver1)
+        print("Multiplicative factor to 1", 1/aver1)
+
 #-----------------------------------------KERAS MODEL -----------------------------------#
 
 if train or predict :
+
+
 
     NNinputs_jeta = Input(shape=(1,))
     NNinputs_jpt = Input(shape=(1,))
@@ -335,16 +404,29 @@ if train or predict :
     print("ComplInput=", ComplInput.shape)
     # print("ComplInput size", ComplInput.size)
 
-    # target_loss_w = np.zeros(shape=(jetNum,jetDim, jetDim,trackNum,parNum))#+1
-    # for j in range (int(len(input_))) :
-    #     for x in range(jetDim) :
-    #         for y in range(jetDim) :
-    #             for par in range(parNum) :
-    #                 for trk in range(trackNum) :
-    #                     if target_[j_eff][x][y][trk][0] = 0.0  and target_[j_eff][x][y][trk][1] = 0.0  and target_[j_eff][x][y][trk][2] = 0.0  and target_[j_eff][x][y][trk][3] = 0.0 :
-    #                         target_w[j_eff][x][y][trk][par] = 0.0
-    #                     else :
-    #                         target_loss_w[j_eff][x][y][trk][par] = 1.0
+
+
+
+
+    # conv30_9 = Conv2D(20,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
+    # conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
+    # conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)
+    # conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
+    # conv15_5 = Conv2D(15,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
+    #
+    # # conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
+    # # conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_1)
+    # # conv15_3_3 = Conv2D(12,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2)
+    # conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(conv15_5)
+    # reshaped = Reshape((jetDim,jetDim,trackNum,parNum))(conv15_3)
+    #
+    # conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv15_5)
+    # reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
+
+
+
+
+
 
 
 
@@ -365,6 +447,13 @@ if train or predict :
     conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv15_5)
     reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
 
+
+
+
+
+
+
+
     # conv30_9 = Conv2D(100,31, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
     # conv30_7 = Conv2D(50,21, data_format="channels_last", activation='relu',padding="same")(conv30_9)
     # conv30_5 = Conv2D(30,15, data_format="channels_last", activation='relu',padding="same")(conv30_7)
@@ -384,10 +473,13 @@ if train or predict :
 
     model = Model([NNinputs,NNinputs_jeta,NNinputs_jpt],[reshaped,reshaped_prob])
 
-    #anubi = keras.optimizers.Adam(lr=0.001)
+    # anubi = keras.optimizers.Adam(lr=0.1)
+    # anubi = keras.optimizers.Adam(amsgrad=True)
 
-    #model.compile(optimizer=anubi, loss=['mse','binary_crossentropy'], loss_weights=[1,1]) #0.01,100
-    model.compile(optimizer='adam', loss=['mse','binary_crossentropy'], loss_weights=[1,1]) #0.01,100
+
+    # model.compile(optimizer=anubi, loss=['mse','binary_crossentropy'], loss_weights=[1,1]) #0.01,100
+    # model.compile(optimizer='adam', loss=['mse',loss_weighted_crossentropy], loss_weights=[1,1]) #0.01,100
+    model.compile(optimizer='adam', loss=[loss_mse_weight(target_loss_w),loss_weighted_crossentropy], loss_weights=[1,1]) #0.01,100
 
 
     model.summary()
@@ -401,16 +493,16 @@ if train or predict :
 #     ])
 
 #-----------------------------------------NN TRAINING and PREDICITION -----------------------------------#
-continue_training = True
+continue_training = False
 combined_training = False
 
 checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=True)
 if train :
     if continue_training :
-        model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
-        #model.load_weights('weights.16-0.00.hdf5')
-        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+70, verbose = 2, validation_split=valSplit,  initial_epoch=70, callbacks=[checkpointer],class_weight={'reshaped':{},'reshaped_prob':{0:1,1:2000}})  #, callbacks=[validationCall()])
-        model.save_weights('NNPixSeed_train_event_{ev}_tris.h5'.format(ev=jetNum))
+        # model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
+        model.load_weights('weights.20-0.24.hdf5')
+        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+20, verbose = 2, validation_split=valSplit,  initial_epoch=20, callbacks=[checkpointer],class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        model.save_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
     # elif combined_training :
     #     # model.load_weights('toyNN_train_bis_17_lay2_comp.h5')
     #     model.load_weights('toyNN_train_COMB_8_lay2_comp.h5')
@@ -418,7 +510,7 @@ if train :
     #     model.save_weights('toyNN_train_COMB_{Seed}_bis_lay2_comp.h5'.format(Seed=seed))
     else :
         # pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
-        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer],class_weight={'reshaped':{},'reshaped_prob':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer])#,class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
         # pdf_par.close()
         model.save_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
 
@@ -491,8 +583,8 @@ if predict :
     print("prediction: start ")
 
     if train == False :
-        model.load_weights('weights.115-0.00.hdf5')
-        #model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
+        # model.load_weights('weights.46-0.03.hdf5')
+        model.load_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
         #model.load_weights('../new_deltaphi/NNPixSeed_train_event_1000.h5')
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
@@ -520,7 +612,7 @@ if output :
      from ROOT import *
      gROOT.Reset()
      gROOT.SetBatch(True); #no draw at screen
-     numPrint = 10
+     numPrint = 5
      validation_offset=int(len(input_)*(1-valSplit)+1)
 
      canvasTot = []
@@ -589,15 +681,24 @@ if output :
                              if(trk>0 and target_prob[j_eff][x][y][trk] == 1) :
                                 print("Secondary map filled: map, x,y,jet",trk,x,y,jet)
                              mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
-
                              if target_prob[j_eff][x][y][trk] == 1 and lay==1:
-                                 xx= target_[j_eff][x][y][trk][0]
-                                 yy= target_[j_eff][x][y][trk][1]
+                                 xx= float(target_[j_eff][x][y][trk][0])/float(0.01)
+                                 yy= float(target_[j_eff][x][y][trk][1])/float(0.015)
                                  graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
                                  tarPoint = tarPoint+1
+                            #  if(target_[j_eff][x][y][trk][0]>0.000001 or target_[j_eff][x][y][trk][0]<- 0.00001 or target_[j_eff][x][y][trk][0]>0.000001 or target_[j_eff][x][y][trk][0]<- 0.00001 or target_[j_eff][x][y][trk][1]>0.000001 or target_[j_eff][x][y][trk][1]<- 0.00001 or target_[j_eff][x][y][trk][2]>0.000001 and target_[j_eff][x][y][trk][2]<- 0.00001 or target_[j_eff][x][y][trk][3]>0.000001 and target_[j_eff][x][y][trk][3]<- 0.00001) :
+                            #      if(lay==1) :
+                            #             xx= target_[j_eff][x][y][trk][0]/0.01+0.01*x
+                            #             yy= target_[j_eff][x][y][trk][1]/0.015+0.01*y
+                            #             graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
+                            #             tarPoint = tarPoint+1
+                            #             print("________________________________________")
+                            #             print("New not null, bin (x,y):",x,y)
+                            #             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
                              if validation_prob[j_eff][x][y][trk] > prob_thr and lay==1 :
-                                 xx_pr= validation_par[j_eff][x][y][trk][0]
-                                 yy_pr= validation_par[j_eff][x][y][trk][1]
+                                 xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)
+                                 yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)
+
                                  graphPredTot[jet][lay].SetPoint(predPoint,x+xx_pr-jetDim/2,y+yy_pr-jetDim/2)
                                  predPoint = predPoint+1
                                  print("________________________________________")
