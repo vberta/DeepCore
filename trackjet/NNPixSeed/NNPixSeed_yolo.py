@@ -105,15 +105,16 @@ class wHistory(keras.callbacks.Callback):
 wH = wHistory()
 
 
-batch_size = 32 # Batch size for training. //32 is the good
-epochs =  200 # Number of epochs to train for.
+batch_size = 128#32 # Batch size for training. //32 is the good
+epochs =  100 # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 
 import random
 random.seed(seed)
 
-jetNum=1000
+jetNum=16460#1899
+jetNum_validation = 3441
 valSplit=0.2
 
 jetDim=200
@@ -125,13 +126,14 @@ parNum = 4
 
 prob_thr =0.3
 
-input_ = np.zeros(shape=(jetNum, jetDim,jetDim,layNum)) #jetMap
-target_ = np.zeros(shape=(jetNum,jetDim, jetDim,trackNum,parNum))#+1
-target_prob = np.zeros(shape=(jetNum,jetDim,jetDim,trackNum))
+# if(predict or output) :
+#     input_ = np.zeros(shape=(jetNum, jetDim,jetDim,layNum)) #jetMap
+#     target_ = np.zeros(shape=(jetNum,jetDim, jetDim,trackNum,parNum+1))#+1
+#     target_prob = np.zeros(shape=(jetNum,jetDim,jetDim,trackNum))
 
 jetNum_test=50
 input_test = np.zeros(shape=(jetNum_test, jetDim,jetDim,layNum)) #jetMap
-target_test = np.zeros(shape=(jetNum_test,jetDim, jetDim,trackNum,parNum))#+1
+target_test = np.zeros(shape=(jetNum_test,jetDim, jetDim,trackNum,parNum+1))#+1
 target_prob_test = np.zeros(shape=(jetNum_test,jetDim,jetDim,trackNum))
 input_jeta_test = np.zeros(shape=(jetNum_test))
 input_jpt_test = np.zeros(shape=(jetNum_test))
@@ -239,7 +241,7 @@ def loss_weighted_crossentropy(target, output):
     epsilon_ = _to_tensor(epsilon(), output.dtype.base_dtype)
     output = clip_ops.clip_by_value(output, epsilon_, 1 - epsilon_)
     output = math_ops.log(output / (1 - output))
-    return nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=2900)
+    return nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=900)#2900
 
 
 def loss_mse_weight(y_weight) :
@@ -252,22 +254,82 @@ def loss_mse_weight(y_weight) :
     return loss_mse
 #altra idea: aggiungi vettore al target e poi lo splitti dentro la loss in 2 sotto vettori e fai l'mse di quelli.
 
-# def loss_mse_select(y_true, y_pred) :
-#     _epsilon = K.epsilon()
-#     y_pred = clip_ops.clip_by_value(y_pred, _epsilon, 1 - _epsilon)
-#     out = K.square(y_pred[:-1] - y_true[:-1])*(y_true[:end])
-#     return K.mean(out, axis=-1)
+def loss_mse_select(y_true, y_pred) :
+    _epsilon = K.epsilon()
+    y_pred = clip_ops.clip_by_value(y_pred, _epsilon, 1 - _epsilon)
+
+    wei = y_true[:,:,:,:,-1]
+    pred = y_pred[:,:,:,:,:-1]
+    true =  y_true[:,:,:,:,:-1]
+
+    pred = tf.transpose(pred, perm = [4,0,1,2,3])
+    true = tf.transpose(true, perm = [4,0,1,2,3])
+    wei = K.expand_dims(wei,0)
+    # wei = K.expand_dims(wei,4)
+    # out = K.square(y_pred[:,:,:,:,:-1] - y_true[:,:,:,:,:-1])*wei
+    out =K.square(pred-true)*wei
+    out = tf.transpose(out, perm =[1,2,3,4,0])
+    return K.mean(out, axis=-1)
+
+def Generator(files) :
+    while 1:
+        for f in files :
+            import uproot
+            tfile = uproot.open(f)
+            print("file=",f)
+
+            tree = tfile["demo"]["NNPixSeedInputTree"]
+            input_ = tree.array("cluster_measured")
+            input_jeta = tree.array("jet_eta")
+            input_jpt = tree.array("jet_pt")
+            target_ = tree.array("trackPar")
+            target_prob = tree.array("trackProb")
+
+            print("file dimension=", len(input_jeta))
+
+            for k in range(len(input_jeta)/batch_size) :
+                # print("range=", k)
+                yield [input_[batch_size*(k):batch_size*(k+1)],input_jeta[batch_size*(k):batch_size*(k+1)],input_jpt[batch_size*(k):batch_size*(k+1)]], [target_[batch_size*(k):batch_size*(k+1)],target_prob[batch_size*(k):batch_size*(k+1)]]
 
 #--------------------------------------------- INPUT from ROOT conversion-------------------------------#
-gpu=False
+gpu=True
+chain = True
 if convert :
 
     import ROOT
+    from ROOT import TChain, TSelector, TTree, TString
     from root_numpy import *
     from root_numpy import testdata
 
+    import gzip
+    import cPickle
+
     tfile = ROOT.TFile(input_name)
     tree = tfile.Get('demo/NNPixSeedInputTree')
+
+    # if(chain) :
+    #     # inputChain = TChain("iC")
+    #     tree = TChain('demo/NNPixSeedInputTree')
+    #     # xrd =TString("root://cms-xrd-global.cern.ch//store/user/vbertacc/")
+    #     print("chain start")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_1.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_2.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_3.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_4.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_5.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_6.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_7.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_8.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_9.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_10.root")
+    #     tree.Add("root://cms-xrd-global.cern.ch//store/user/vbertacc/NNPixSeedInput/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/NNPixSeedInput/180716_161507/0000/histo_10k_11.root")
+    #
+    #     # tree = inputChain.Get('demo/NNPixSeedInputTree')
+    #
+    #     print("chain loaded")
+
+
+
 
     input_ = tree2array(tree, branches=['cluster_measured'])
     input_=rec2array(input_)
@@ -280,19 +342,27 @@ if convert :
     target_prob = tree2array(tree, branches=['trackProb'])
     target_prob =rec2array(target_prob)
 
-    print("start creation weight")
-    target_loss_w = np.zeros(shape=(int(len(input_)),jetDim, jetDim,trackNum,parNum))#+1
-    for j in range (int(len(input_))) :
-        for x in range(jetDim) :
-            for y in range(jetDim) :
-                for par in range(parNum) :
-                    for trk in range(trackNum) :
-                        if target_[j][x][y][trk][0] == 0.0  and target_[j][x][y][trk][1] == 0.0  and target_[j][x][y][trk][2] == 0.0  and target_[j][x][y][trk][3] == 0.0 :
-                            target_loss_w[j][x][y][trk][par] = 0.0
-                        else :
-                            target_loss_w[j][x][y][trk][par] = 1.0
+    npTree={}
+    npTree["input_"]=input_
+    npTree["input_jeta"]=input_jeta
+    npTree["input_jpt"]=input_jpt
+    npTree["target_"]=target_
+    npTree["target_prob"]=target_prob
 
-    print("end creation weight")
+
+    # print("start creation weight")
+    # target_loss_w = np.zeros(shape=(int(len(input_)),jetDim, jetDim,trackNum,parNum))#+1
+    # for j in range (int(len(input_))) :
+    #     for x in range(jetDim) :
+    #         for y in range(jetDim) :
+    #             for par in range(parNum) :
+    #                 for trk in range(trackNum) :
+    #                     if target_[j][x][y][trk][0] == 0.0  and target_[j][x][y][trk][1] == 0.0  and target_[j][x][y][trk][2] == 0.0  and target_[j][x][y][trk][3] == 0.0 :
+    #                         target_loss_w[j][x][y][trk][par] = 0.0
+    #                     else :
+    #                         target_loss_w[j][x][y][trk][par] = 1.0
+    #
+    # print("end creation weight")
 
 
 
@@ -315,7 +385,18 @@ if convert :
     print("loading data: completed")
 
     if(gpu==False) :
-        np.savez("NNPixSeed_event_{ev}".format(ev=jetNum), input_=input_, input_jeta=input_jeta, input_jpt=input_jpt, target_=target_, target_prob =target_prob, target_loss_w=target_loss_w)
+
+        fp=gzip.open("NNPixSeed_event_{ev}.dmpz".format(ev=jetNum),"wb")
+        # cPickle.dump(input_,fp)
+        # cPickle.dump(input_jeta,fp)
+        # cPickle.dump(input_jpt,fp)
+        # cPickle.dump(target_,fp)
+        # cPickle.dump(target_prob,fp)
+        cPickle.dump(npTree,fp)
+
+        fp.close()
+        # np.savez("NNPixSeed_event_{ev}".format(ev=jetNum), input_=input_, input_jeta=input_jeta, input_jpt=input_jpt, target_=target_, target_prob =target_prob, target_loss_w=target_loss_w)
+        # np.savez("NNPixSeed_event_{ev}".format(ev=jetNum), input_=input_, input_jeta=input_jeta, input_jpt=input_jpt, target_=target_, target_prob =target_prob)
 
     print("saving data: completed")
 
@@ -329,41 +410,100 @@ if convert :
 
 #---------------------------------------------numpy INPUT -------------------------------#
 if convert==False and gpu==True:
-    print("loading data: start")
-    loadedfile = np.load(input_name)
-    input_= loadedfile['input_']
-    input_jeta= loadedfile['input_jeta']
-    input_jpt= loadedfile['input_jpt']
-    target_= loadedfile['target_']
-    target_prob= loadedfile['target_prob']
-    target_loss_w = loadedfile['target_loss_w']
 
-    # for jet in range(jetNum) :
-    #     for trk in range(trackNum) :
-    #         target_[jet][trk][0]+=jetDim/2
-    #         target_[jet][trk][1]+=jetDim/2
+    if(predict or output) :
+        print("loading data: start")
+
+        # import gzip
+        # import pickle
+        loadedfile = np.load(input_name)
+
+        # fp=gzip.open("NNPixSeed_event_{ev}.dmpz".format(ev=jetNum),"r")
+        # loadedfile = pickle.load(fp)
+
+        input_= loadedfile['input_']
+        input_jeta= loadedfile['input_jeta']
+        input_jpt= loadedfile['input_jpt']
+        target_= loadedfile['target_']
+        target_prob= loadedfile['target_prob']
+        # target_loss_w = loadedfile['target_loss_w']
+
+        # for jet in range(jetNum) :
+        #     for trk in range(trackNum) :
+        #         target_[jet][trk][0]+=jetDim/2
+        #         target_[jet][trk][1]+=jetDim/2
 
 
-    print("loading data: completed")
+        print("loading data: completed")
+
+
+
+    uproot_flag = False
+    if(uproot_flag) :
+
+        print("loading data: start")
+
+        import uproot
+        tfile = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_1.root")
+        tree = tfile["demo"]["NNPixSeedInputTree"]
+        input_ = tree.array("cluster_measured")
+        input_jeta = tree.array("jet_eta")
+        input_jpt = tree.array("jet_pt")
+        target_ = tree.array("trackPar")
+        target_prob = tree.array("trackProb")
+
+        for f in range (1,11) :
+            print("loop=", f)
+
+            print("input shape=", input_.shape)
+            print("input len=", len(input_))
+            print("input eta shape=", input_jeta.shape)
+            print("input eta len=", len(input_jeta))
+            print("input pt shape=", input_jpt.shape)
+            print("input pt len=", len(input_jpt))
+            print("target par shape=", target_.shape)
+            print("target par len=", len(target_))
+            print("target prob shape=", target_prob.shape)
+            print("target prob len=", len(target_prob))
+
+
+            tfile_f = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_{n}.root".format(n=f+1))
+            tree_f = tfile["demo"]["NNPixSeedInputTree"]
+            input__f = tree_f.array("cluster_measured")
+            input_jeta_f = tree_f.array("jet_eta")
+            input_jpt_f = tree_f.array("jet_pt")
+            target__f = tree_f.array("trackPar")
+            target_prob_f = tree_f.array("trackProb")
+
+            input_ = np.concatenate((input_,input__f),axis=0)
+            input_jeta = np.concatenate((input_jeta,input_jeta_f),axis=0)
+            input_jpt = np.concatenate((input_jpt,input_jpt_f),axis=0)
+            target_ = np.concatenate((target_,target__f),axis=0)
+            target_prob = np.concatenate((target_prob,target_prob_f),axis=0)
+
+        print("loading data: completed")
+
+
 
 
     test_sample_creation = False
     if test_sample_creation == True:
-        print("testing sample creation:")
+        print("testing sample creation: ...")
         for jj in range (jetNum_test) :
             j = jj+(int(len(input_))-jetNum_test-5)
             input_jeta_test[jj] = input_jeta[j]
             input_jpt_test[jj] = input_jpt[j]
             for x in range(jetDim) :
                 for y in range(jetDim) :
-                    for par in range(parNum) :
-                        input_test[jj][x][y][par] = input_[j][x][y][par]
+                    for par in range(parNum+1) :
+                        if(par<4) :
+                            input_test[jj][x][y][par] = input_[j][x][y][par]
                         for trk in range(trackNum) :
                             target_test[jj][x][y][trk][par] = target_[j][x][y][trk][par]
                             target_prob_test[jj][x][y][trk] = target_prob[j][x][y][trk]
-
+        pint("... save ...")
         np.savez("NNPixSeed_event_{ev}_test".format(ev=jetNum_test), input_=input_test, input_jeta=input_jeta_test, input_jpt=input_jpt_test, target_=target_test, target_prob =target_prob_test)
-
+        print("..completed")
 
 
     average_1_eval = False
@@ -383,6 +523,57 @@ if convert==False and gpu==True:
         aver1 = float(aver1)/float(len(input_))
         print("average of the number of 1", aver1)
         print("Multiplicative factor to 1", 1/aver1)
+
+
+
+    # for jj in range (1) :
+    #     for x in range(jetDim) :
+    #         for y in range(jetDim) :
+    #             for par in range(parNum+1) :
+    #                 for trk in range(trackNum) :
+    #                     if(target_[jj][x][y][trk][par]!=0) :
+    #                         print ("x,y,trk,par",x,y,trk,par, target_[jj][x][y][trk][par])
+
+
+    # testDim = target_[0,77:79,67:69,0,0:2]
+    # print("testDim=", testDim)
+    # print("targe 0,77,67,0,0",  target_[0][77][67][0][0])
+    # fuffa = target_[0,77:79,67:69,0,0:2]
+    # fuffa[0][0][0] = 0.1
+    # fuffa[0][0][1] = 0.4
+    # # fuffa[0][0][2] = -0.3
+    # # fuffa[0][0][3] = -0.5
+    # fuffa[0][1][1] = 2
+    # # fuffa[0][1][2] = 4
+    # print("fuffa=", fuffa)
+    # print("targe 0,77,67,0,0",  target_[0][77][67][0][0])
+    # t1 = np.zeros(shape=(2, 2,3))
+    # t2 =  np.zeros(shape=(2, 2))
+    # t1[0][0][0] = 3
+    # t1[0][1][0] = 2
+    # t1[1][0][0] = 1
+    # t1[1][1][0] = 2.5
+    # t2[0][0] = 5
+    # t2[0][1] = 7
+    # print("t1=", t1)
+    # print("t2=",t2)
+    # # t1 = K.reshape(t1,(3,2,2))
+    # t1 = tf.transpose(t1, perm=[2,0,1])
+    #
+    # t2=K.expand_dims(t2,0)
+    #
+    # reess = K.square(t1-t2)
+    # # reess = K.square(t2-t1)
+    # # print("222",testDim[2,2,2])
+    # # testDim = K.expand_dims(testDim,3)
+    # # print("expandend", testDim)
+    # sess = tf.InteractiveSession()
+    # print(sess.run(reess))
+
+    # print(sess.run(testDim))
+    # print(sess.run(reess))
+    # a = tf.Print(a, [a], message="This is testDim: ")
+    # print("222",testDim[2,2,2,0])
 
 #-----------------------------------------KERAS MODEL -----------------------------------#
 
@@ -440,9 +631,9 @@ if train or predict :
 
     conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
     conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_1)
-    conv15_3_3 = Conv2D(12,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2)
-    conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(conv15_3_3)
-    reshaped = Reshape((jetDim,jetDim,trackNum,parNum))(conv15_3)
+    conv15_3_3 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
+    conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_3_3)#(12,3)
+    reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
 
     conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv15_5)
     reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
@@ -479,7 +670,10 @@ if train or predict :
 
     # model.compile(optimizer=anubi, loss=['mse','binary_crossentropy'], loss_weights=[1,1]) #0.01,100
     # model.compile(optimizer='adam', loss=['mse',loss_weighted_crossentropy], loss_weights=[1,1]) #0.01,100
-    model.compile(optimizer='adam', loss=[loss_mse_weight(target_loss_w),loss_weighted_crossentropy], loss_weights=[1,1]) #0.01,100
+
+    # model.compile(optimizer='adam', loss=[loss_mse_weight(target_loss_w),loss_weighted_crossentropy], loss_weights=[1,1])
+    model.compile(optimizer='adam', loss=[loss_mse_select,loss_weighted_crossentropy], loss_weights=[1,1])
+
 
 
     model.summary()
@@ -493,15 +687,24 @@ if train or predict :
 #     ])
 
 #-----------------------------------------NN TRAINING and PREDICITION -----------------------------------#
-continue_training = False
+continue_training = True
 combined_training = False
 
+files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_*.root')
+files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/histo_10k_*.root')
+
+print("lenght file=", len(files))
+print("lenght file validation=", len(files_validation))
+
 checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=True)
+
 if train :
+    stepNum = jetNum/batch_size
     if continue_training :
         # model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
-        model.load_weights('weights.20-0.24.hdf5')
-        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+20, verbose = 2, validation_split=valSplit,  initial_epoch=20, callbacks=[checkpointer],class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        model.load_weights('NNPixSeed_train_event_16460.h5')
+        # history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+20, verbose = 2, validation_split=valSplit,  initial_epoch=20, callbacks=[checkpointer],class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+10, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer], initial_epoch=11)
         model.save_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
     # elif combined_training :
     #     # model.load_weights('toyNN_train_bis_17_lay2_comp.h5')
@@ -510,7 +713,9 @@ if train :
     #     model.save_weights('toyNN_train_COMB_{Seed}_bis_lay2_comp.h5'.format(Seed=seed))
     else :
         # pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
-        history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer])#,class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        # history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer])#,class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        print("Number of Steps=",stepNum)
+        history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer])
         # pdf_par.close()
         model.save_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
 
@@ -583,8 +788,9 @@ if predict :
     print("prediction: start ")
 
     if train == False :
-        # model.load_weights('weights.46-0.03.hdf5')
-        model.load_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
+        #model.load_weights('weights.24-0.10.hdf5')#good  one
+        model.load_weights('weights.70-1.80.hdf5')
+        # model.load_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
         #model.load_weights('../new_deltaphi/NNPixSeed_train_event_1000.h5')
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
@@ -612,7 +818,7 @@ if output :
      from ROOT import *
      gROOT.Reset()
      gROOT.SetBatch(True); #no draw at screen
-     numPrint = 5
+     numPrint = 10
      validation_offset=int(len(input_)*(1-valSplit)+1)
 
      canvasTot = []
