@@ -9,6 +9,7 @@ from keras.callbacks import Callback
 from keras.models import Model,load_model, Sequential
 from keras.layers import Input, LSTM, Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Reshape, Conv2DTranspose, concatenate, Concatenate, ZeroPadding2D, UpSampling2D, UpSampling1D
 from keras.optimizers import *
+from keras.initializers import *
 import numpy as np
 import tensorflow as tf
 from keras.backend import tensorflow_backend as K
@@ -105,15 +106,17 @@ class wHistory(keras.callbacks.Callback):
 wH = wHistory()
 
 
-batch_size = 128#32 # Batch size for training. //32 is the good
-epochs =  100 # Number of epochs to train for.
+batch_size = 64#64#128#32 # Batch size for training. //32 is the good
+epochs = 100 # Number of epochs to train for.
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
+
+standard_mse = False
 
 import random
 random.seed(seed)
 
-jetNum=16460#1899
+jetNum=16460#200000#100000#16460#
 jetNum_validation = 3441
 valSplit=0.2
 
@@ -124,7 +127,7 @@ genTrackNum=3
 layNum = 4
 parNum = 4
 
-prob_thr =0.3
+prob_thr =0.99
 
 # if(predict or output) :
 #     input_ = np.zeros(shape=(jetNum, jetDim,jetDim,layNum)) #jetMap
@@ -238,13 +241,22 @@ def epsilon():
     return _EPSILON
 
 def loss_weighted_crossentropy(target, output):
-    epsilon_ = _to_tensor(epsilon(), output.dtype.base_dtype)
+    epsilon_ = _to_tensor(keras.backend.epsilon(), output.dtype.base_dtype)
+    # epsilon_ = keras.backend.epsilon()
     output = clip_ops.clip_by_value(output, epsilon_, 1 - epsilon_)
     output = math_ops.log(output / (1 - output))
-    return nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=900)#2900
+    output = nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=900)#2900
+    return K.mean(output, axis=-1)
+
+# def loss_weighted_crossentropy(target, output):
+#     # epsilon_ = keras.backend.epsilon()
+#     # output = clip_ops.clip_by_value(output, epsilon_, 1 - epsilon_)
+#     # output = math_ops.log(output / (1 - output))
+#     wBCE = nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=2900)#2900 #900=works
+#     return K.mean(wBCE, axis=-1)
 
 
-def loss_mse_weight(y_weight) :
+def loss_mse_weight(y_weight) : #NOT USED!!!!
     _epsilon = K.epsilon()
     def loss_mse(y_true, y_pred):
         # y_pred = np.clip(y_pred, _epsilon, 1.0-_epsilon)
@@ -255,28 +267,28 @@ def loss_mse_weight(y_weight) :
 #altra idea: aggiungi vettore al target e poi lo splitti dentro la loss in 2 sotto vettori e fai l'mse di quelli.
 
 def loss_mse_select(y_true, y_pred) :
-    _epsilon = K.epsilon()
-    y_pred = clip_ops.clip_by_value(y_pred, _epsilon, 1 - _epsilon)
+    # _epsilon = K.epsilon()
+    # y_pred = clip_ops.clip_by_value(y_pred, _epsilon, 1 - _epsilon)
 
-    wei = y_true[:,:,:,:,-1]
+    wei = y_true[:,:,:,:,-1:]
     pred = y_pred[:,:,:,:,:-1]
     true =  y_true[:,:,:,:,:-1]
 
-    pred = tf.transpose(pred, perm = [4,0,1,2,3])
-    true = tf.transpose(true, perm = [4,0,1,2,3])
-    wei = K.expand_dims(wei,0)
-    # wei = K.expand_dims(wei,4)
-    # out = K.square(y_pred[:,:,:,:,:-1] - y_true[:,:,:,:,:-1])*wei
+    # pred = tf.transpose(pred, perm = [4,0,1,2,3])
+    # true = tf.transpose(true, perm = [4,0,1,2,3])
+    # wei = K.expand_dims(wei,0)
     out =K.square(pred-true)*wei
-    out = tf.transpose(out, perm =[1,2,3,4,0])
-    return K.mean(out, axis=-1)
+    # out = tf.transpose(out, perm =[1,2,3,4,0])
+    # print("len wei=",(tf.reduce_sum(wei,axis=None)*4))
+    return tf.reduce_sum(out, axis=None)/(tf.reduce_sum(wei,axis=None)*4) #4=numPar
+    # return K.mean(out, axis=-1)
 
 def Generator(files) :
     while 1:
         for f in files :
             import uproot
             tfile = uproot.open(f)
-            print("file=",f)
+            # print("file=",f)
 
             tree = tfile["demo"]["NNPixSeedInputTree"]
             input_ = tree.array("cluster_measured")
@@ -285,7 +297,19 @@ def Generator(files) :
             target_ = tree.array("trackPar")
             target_prob = tree.array("trackProb")
 
-            print("file dimension=", len(input_jeta))
+            #without flag for standard mse
+            # if(standard_mse) :
+            #     target_ = np.zeros(shape=(len(target_5par),jetDim, jetDim,trackNum,parNum))
+            #     for j in range(len(target_5par)) :
+            #         for x in range(jetDim) :
+            #             for y in range(jetDim) :
+            #                 for trk in range (trackNum) :
+            #                     for p in range (parNum) :
+            #                         target_[j][x][y][trk][p] = target_5par[j][x][y][trk][p]
+            # else :
+            #     target_ = target_5par
+
+            # print("file dimension=", len(input_jeta))
 
             for k in range(len(input_jeta)/batch_size) :
                 # print("range=", k)
@@ -411,7 +435,8 @@ if convert :
 #---------------------------------------------numpy INPUT -------------------------------#
 if convert==False and gpu==True:
 
-    if(predict or output) :
+    old_loading= False
+    if(old_loading and (predict or output)) :
         print("loading data: start")
 
         # import gzip
@@ -434,17 +459,21 @@ if convert==False and gpu==True:
         #         target_[jet][trk][1]+=jetDim/2
 
 
+
+
+
         print("loading data: completed")
 
 
-
-    uproot_flag = False
+    # print("pre uproot flag")
+    uproot_flag = True
     if(uproot_flag) :
 
         print("loading data: start")
 
         import uproot
-        tfile = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_1.root")
+        # tfile = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_1.root")
+        tfile = uproot.open(input_name)
         tree = tfile["demo"]["NNPixSeedInputTree"]
         input_ = tree.array("cluster_measured")
         input_jeta = tree.array("jet_eta")
@@ -452,34 +481,45 @@ if convert==False and gpu==True:
         target_ = tree.array("trackPar")
         target_prob = tree.array("trackProb")
 
-        for f in range (1,11) :
-            print("loop=", f)
+        # if(standard_mse) : //too slow! not used
+        #     target_ = np.zeros(shape=(len(target_5par),jetDim, jetDim,trackNum,parNum))
+        #     for j in range(len(target_5par)) :
+        #         for x in range(jetDim) :
+        #             for y in range(jetDim) :
+        #                 for trk in range (trackNum) :
+        #                     for p in range (parNum) :
+        #                         target_[j][x][y][trk][p] = target_5par[j][x][y][trk][p]
+        # else :
+        #     target_ = target_5par
 
-            print("input shape=", input_.shape)
-            print("input len=", len(input_))
-            print("input eta shape=", input_jeta.shape)
-            print("input eta len=", len(input_jeta))
-            print("input pt shape=", input_jpt.shape)
-            print("input pt len=", len(input_jpt))
-            print("target par shape=", target_.shape)
-            print("target par len=", len(target_))
-            print("target prob shape=", target_prob.shape)
-            print("target prob len=", len(target_prob))
-
-
-            tfile_f = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_{n}.root".format(n=f+1))
-            tree_f = tfile["demo"]["NNPixSeedInputTree"]
-            input__f = tree_f.array("cluster_measured")
-            input_jeta_f = tree_f.array("jet_eta")
-            input_jpt_f = tree_f.array("jet_pt")
-            target__f = tree_f.array("trackPar")
-            target_prob_f = tree_f.array("trackProb")
-
-            input_ = np.concatenate((input_,input__f),axis=0)
-            input_jeta = np.concatenate((input_jeta,input_jeta_f),axis=0)
-            input_jpt = np.concatenate((input_jpt,input_jpt_f),axis=0)
-            target_ = np.concatenate((target_,target__f),axis=0)
-            target_prob = np.concatenate((target_prob,target_prob_f),axis=0)
+        # for f in range (1,11) :
+        #     print("loop=", f)
+        #
+        #     print("input shape=", input_.shape)
+        #     print("input len=", len(input_))
+        #     print("input eta shape=", input_jeta.shape)
+        #     print("input eta len=", len(input_jeta))
+        #     print("input pt shape=", input_jpt.shape)
+        #     print("input pt len=", len(input_jpt))
+        #     print("target par shape=", target_.shape)
+        #     print("target par len=", len(target_))
+        #     print("target prob shape=", target_prob.shape)
+        #     print("target prob len=", len(target_prob))
+        #
+        #
+        #     tfile_f = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_{n}.root".format(n=f+1))
+        #     tree_f = tfile["demo"]["NNPixSeedInputTree"]
+        #     input__f = tree_f.array("cluster_measured")
+        #     input_jeta_f = tree_f.array("jet_eta")
+        #     input_jpt_f = tree_f.array("jet_pt")
+        #     target__f = tree_f.array("trackPar")
+        #     target_prob_f = tree_f.array("trackProb")
+        #
+        #     input_ = np.concatenate((input_,input__f),axis=0)
+        #     input_jeta = np.concatenate((input_jeta,input_jeta_f),axis=0)
+        #     input_jpt = np.concatenate((input_jpt,input_jpt_f),axis=0)
+        #     target_ = np.concatenate((target_,target__f),axis=0)
+        #     target_prob = np.concatenate((target_prob,target_prob_f),axis=0)
 
         print("loading data: completed")
 
@@ -501,7 +541,7 @@ if convert==False and gpu==True:
                         for trk in range(trackNum) :
                             target_test[jj][x][y][trk][par] = target_[j][x][y][trk][par]
                             target_prob_test[jj][x][y][trk] = target_prob[j][x][y][trk]
-        pint("... save ...")
+        print("... save ...")
         np.savez("NNPixSeed_event_{ev}_test".format(ev=jetNum_test), input_=input_test, input_jeta=input_jeta_test, input_jpt=input_jpt_test, target_=target_test, target_prob =target_prob_test)
         print("..completed")
 
@@ -524,6 +564,44 @@ if convert==False and gpu==True:
         print("average of the number of 1", aver1)
         print("Multiplicative factor to 1", 1/aver1)
 
+
+    Deb1ev = False #1 event debugging (1ev input here)
+    if(Deb1ev) :
+            print("pre=",len(input_))
+            input_= input_[1:2]
+            input_jeta= input_jeta[1:2]
+            input_jpt= input_jpt[1:2]
+            target_= target_[1:2]
+            target_prob= target_prob[1:2]
+            print("post=",len(input_))
+
+    averageADC = True #average value of ADC count input
+    if(averageADC==True) :
+            averADC=0
+            norm = 0
+            bins = []
+            print("evaluation of averge ADC count")
+            for j in range (int(len(input_))) :
+                # averjet = 0
+                for x in range(jetDim) :
+                    for y in range(jetDim) :
+                        for l in range(layNum) :
+                            if(input_[j][x][y][l]!=0) :
+                                averADC=averADC+input_[j][x][y][l]
+                                bins.append(input_[j][x][y][l])
+                                norm = norm +1
+            averADC = float(averADC)/float(norm)
+            occupancy = float(norm)/(float(jetDim*jetDim*layNum*int(len(input_))))
+            print("average value of input=", averADC)
+            print("average occupancy=", occupancy)
+
+            plt.figure()
+            pylab.hist(bins,100, facecolor='green')
+            pylab.title('Non-zero ADC count distribution')
+            pylab.ylabel('entry')
+            pylab.xlabel('ADC count')
+            plt.grid(True)
+            pylab.savefig("ADC_count.pdf")
 
 
     # for jj in range (1) :
@@ -579,6 +657,7 @@ if convert==False and gpu==True:
 
 if train or predict :
 
+    from keras.layers import AlphaDropout
 
 
     NNinputs_jeta = Input(shape=(1,))
@@ -599,6 +678,105 @@ if train or predict :
 
 
 
+
+
+
+
+
+
+
+
+
+
+    #BOH
+    # conv30_9 = Conv2D(20,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
+    # conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
+    # conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)
+    # conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
+    # conv15_5 = Conv2D(15,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
+    #
+    # conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
+    # conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_1)
+    # conv15_3_3 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
+    # conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_3_3)#(12,3)
+    # reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
+    #
+    # conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv15_5)
+    # reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
+
+
+    #WORKING
+    conv30_9 = Conv2D(20,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
+    conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
+    drop2l = Dropout(0.2)(conv30_7) #only with 100k
+    conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(drop2l)#(conv30_7)#
+    conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
+    conv15_5 = Conv2D(15,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
+
+    conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
+    drop7l = Dropout(0.4)(conv15_3_1)
+    conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(drop7l)
+    drop8l = Dropout(0.3)(conv15_3_2) #new
+    if(standard_mse):
+        conv15_3_3 = Conv2D(12,3, data_format="channels_last",activation='relu', padding="same")(drop8l) #(12,3)
+        conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
+        reshaped = Reshape((jetDim,jetDim,trackNum,parNum))(conv15_3)
+    else :
+        conv15_3_3 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(drop8l) #(12,3)
+        conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
+        reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
+
+    conv12_3_1 = Conv2D(12,3, data_format="channels_last", activation='relu', padding="same")(conv15_5)  #new
+    # drop7lb = Dropout(0.6)(conv12_3_1)
+    conv1_3_2 = Conv2D(9,3, data_format="channels_last", activation='relu', padding="same")(conv12_3_1) #drop7lb   #new
+    conv1_3_3 = Conv2D(7,3, data_format="channels_last", activation='relu',padding="same")(conv1_3_2) #new
+    conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
+    reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
+
+    #conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv15_5)
+    # reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
+
+
+
+
+
+    #
+    #SELU
+    # conv30_9 = Conv2D(20,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='selu', kernel_initializer= 'lecun_normal', padding="same")(ComplInput)
+    # conv30_7 = Conv2D(20,5, data_format="channels_last", activation='selu', kernel_initializer= 'lecun_normal',padding="same")(conv30_9)
+    # drop2l = AlphaDropout(0.2)(conv30_7)
+    # conv30_5 = Conv2D(20,5, data_format="channels_last", activation='selu', kernel_initializer= 'lecun_normal',padding="same")(drop2l)#(conv30_7)#(drop2l)
+    # drop3l = AlphaDropout(0.3)(conv30_5) #removed bydefault
+    # conv20_5 = Conv2D(18,5, data_format="channels_last", activation='selu', kernel_initializer= 'lecun_normal',padding="same")(drop3l)#(conv30_5)
+    # conv15_5 = Conv2D(15,3, data_format="channels_last", activation='selu', kernel_initializer= 'lecun_normal',padding="same")(conv20_5)
+    #
+    # conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='selu', kernel_initializer= 'lecun_normal', padding="same")(conv15_5)
+    # drop7l = AlphaDropout(0.4)(conv15_3_1) #0.4 with anubi_4l
+    # conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='selu', kernel_initializer= 'lecun_normal', padding="same")(drop7l)
+    # drop8l = AlphaDropout(0.4)(conv15_3_2) #new (0.3 bydefault)
+    #
+    # if(standard_mse):
+    #     conv15_3_3 = Conv2D(12,3, data_format="channels_last",activation='selu', kernel_initializer= 'lecun_normal', padding="same")(drop8l) #(12,3)
+    #     conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
+    #     reshaped = Reshape((jetDim,jetDim,trackNum,parNum))(conv15_3)
+    # else :
+    #     conv15_3_3 = Conv2D(15,3, data_format="channels_last",activation='selu', kernel_initializer= 'lecun_normal', padding="same")(drop8l) #(12,3)
+    #     conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
+    #     reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
+    #
+    # conv12_3_1 = Conv2D(12,3, data_format="channels_last", activation='selu', kernel_initializer= 'lecun_normal', padding="same")(conv15_5)  #new
+    # conv1_3_2 = Conv2D(9,3, data_format="channels_last", activation='selu', kernel_initializer= 'lecun_normal', padding="same")(conv12_3_1) #drop7lb   #new
+    # conv1_3_3 = Conv2D(7,3, data_format="channels_last", activation='selu', kernel_initializer= 'lecun_normal',padding="same")(conv1_3_2) #new
+    # conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
+    # reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
+
+
+
+
+
+
+
+    #ORIGINAL
     # conv30_9 = Conv2D(20,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
     # conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
     # conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)
@@ -617,34 +795,7 @@ if train or predict :
 
 
 
-
-
-
-
-
-
-    conv30_9 = Conv2D(20,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
-    conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
-    conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)
-    conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
-    conv15_5 = Conv2D(15,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
-
-    conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
-    conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_1)
-    conv15_3_3 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
-    conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_3_3)#(12,3)
-    reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
-
-    conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv15_5)
-    reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
-
-
-
-
-
-
-
-
+    #### VERY HIGH DIMENSONS
     # conv30_9 = Conv2D(100,31, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
     # conv30_7 = Conv2D(50,21, data_format="channels_last", activation='relu',padding="same")(conv30_9)
     # conv30_5 = Conv2D(30,15, data_format="channels_last", activation='relu',padding="same")(conv30_7)
@@ -664,7 +815,7 @@ if train or predict :
 
     model = Model([NNinputs,NNinputs_jeta,NNinputs_jpt],[reshaped,reshaped_prob])
 
-    # anubi = keras.optimizers.Adam(lr=0.1)
+    anubi = keras.optimizers.Adam(lr=0.0001)
     # anubi = keras.optimizers.Adam(amsgrad=True)
 
 
@@ -672,7 +823,15 @@ if train or predict :
     # model.compile(optimizer='adam', loss=['mse',loss_weighted_crossentropy], loss_weights=[1,1]) #0.01,100
 
     # model.compile(optimizer='adam', loss=[loss_mse_weight(target_loss_w),loss_weighted_crossentropy], loss_weights=[1,1])
-    model.compile(optimizer='adam', loss=[loss_mse_select,loss_weighted_crossentropy], loss_weights=[1,1])
+
+
+    #model.compile(optimizer='adam', loss=[loss_mse_select,loss_weighted_crossentropy], loss_weights=[1,1])
+    if(standard_mse) :
+        model.compile(optimizer=anubi, loss=['mse',loss_weighted_crossentropy], loss_weights=[1,1])
+    else :
+        model.compile(optimizer=anubi, loss=[loss_mse_select,loss_weighted_crossentropy], loss_weights=[1,1])
+
+    # model.compile(optimizer='adam', loss=[loss_mse_select,'binary_crossentropy'], loss_weights=[1,1])
 
 
 
@@ -687,11 +846,40 @@ if train or predict :
 #     ])
 
 #-----------------------------------------NN TRAINING and PREDICITION -----------------------------------#
-continue_training = True
+continue_training = False
 combined_training = False
 
-files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_*.root')
-files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/histo_10k_*.root')
+#1hit
+# files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_1hitPar*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/histo_10k_1hitPar*.root')
+
+#4hit
+# files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10_*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/histo_10_*.root')
+
+#4hit 100k
+# files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/_100k/histo_50_1hitPar_1*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/_100k/histo_50_1hitPar_40*.root')
+
+#4hit standard mse 10k
+# files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/noflag_4hit/histo_10k_*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/noflag_4hit/histo_10k_*.root')
+
+#1hit standard mse 10k
+# files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/noflag_1hit/histo_10k_*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/noflag_1hit/histo_10k_*.root')
+
+#4hit standard mse 100k
+# files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/noflag_100k_4hit/histo_100k_*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/noflag_100k_4hit/histo_100k_*.root')
+
+#4hit multiplied (regularized par) 10k
+# files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/multiplied_4hit/histo*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/multiplied_4hit/histo*.root')
+
+#1hit multiplied (regularized par) 10k
+files=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/multiplied_1hit/histo*.root')
+files_validation=glob.glob('/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/validation/multiplied_1hit/histo*.root')
 
 print("lenght file=", len(files))
 print("lenght file validation=", len(files_validation))
@@ -701,11 +889,13 @@ checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5
 if train :
     stepNum = jetNum/batch_size
     if continue_training :
-        # model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
-        model.load_weights('NNPixSeed_train_event_16460.h5')
-        # history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs+20, verbose = 2, validation_split=valSplit,  initial_epoch=20, callbacks=[checkpointer],class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
-        history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+10, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer], initial_epoch=11)
-        model.save_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
+        model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
+        # model.load_weights('NNPixSeed_train_event_100000.h5')
+        if(uproot_flag) :
+            history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs+50, verbose = 2, validation_split=valSplit,  initial_epoch=50, callbacks=[checkpointer])#class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
+        else :
+            history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+100, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer], initial_epoch=100)
+        model.save_weights('NNPixSeed_train_event_{ev}_tris.h5'.format(ev=jetNum))
     # elif combined_training :
     #     # model.load_weights('toyNN_train_bis_17_lay2_comp.h5')
     #     model.load_weights('toyNN_train_COMB_8_lay2_comp.h5')
@@ -715,49 +905,55 @@ if train :
         # pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_{Seed}_ep{Epoch}.pdf".format(Seed=seed, Epoch=epochs))
         # history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, nb_epoch=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer])#,class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
         print("Number of Steps=",stepNum)
-        history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer])
+        if(uproot_flag and (not Deb1ev)) :
+            history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer])
+        elif(Deb1ev) :
+            history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs, verbose = 2)#, validation_split=valSplit,  callbacks=[checkpointer])
+        else :
+            history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer])
         # pdf_par.close()
         model.save_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
 
 
     pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_event{ev}.pdf".format( Epoch=epochs,ev=jetNum))
 
-    plt.figure(1000)
-    plt.yscale('log')
-    pylab.plot(history.history['loss'])
-    pylab.plot(history.history['val_loss'])
-    pylab.title('model loss')
-    pylab.ylabel('loss')
-    pylab.xlabel('epoch')
-    plt.grid(True)
-    pylab.legend(['train', 'test'], loc='upper right')
-    #pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
-    pdf_loss.savefig(1000)
-    # pylab.show()
+    if(not Deb1ev) :
+        plt.figure(1000)
+        plt.yscale('log')
+        pylab.plot(history.history['loss'])
+        pylab.plot(history.history['val_loss'])
+        pylab.title('model loss')
+        pylab.ylabel('loss')
+        pylab.xlabel('epoch')
+        plt.grid(True)
+        pylab.legend(['train', 'test'], loc='upper right')
+        #pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
+        pdf_loss.savefig(1000)
+        # pylab.show()
 
-    plt.figure(1001)
-    plt.yscale('log')
-    pylab.plot(history.history['reshape_2_loss'])
-    pylab.plot(history.history['val_reshape_2_loss'])
-    pylab.title('model loss (parameters)')
-    pylab.ylabel('loss')
-    pylab.xlabel('epoch')
-    plt.grid(True)
-    pylab.legend(['train', 'test'], loc='upper right')
-    # pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
-    pdf_loss.savefig(1001)
+        plt.figure(1001)
+        plt.yscale('log')
+        pylab.plot(history.history['reshape_2_loss'])
+        pylab.plot(history.history['val_reshape_2_loss'])
+        pylab.title('model loss (parameters)')
+        pylab.ylabel('loss')
+        pylab.xlabel('epoch')
+        plt.grid(True)
+        pylab.legend(['train', 'test'], loc='upper right')
+        # pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
+        pdf_loss.savefig(1001)
 
-    plt.figure(1002)
-    plt.yscale('log')
-    pylab.plot(history.history['reshape_3_loss'])
-    pylab.plot(history.history['val_reshape_3_loss'])
-    pylab.title('model loss (probability)')
-    pylab.ylabel('loss')
-    pylab.xlabel('epoch')
-    plt.grid(True)
-    pylab.legend(['train', 'test'], loc='upper right')
-    # pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
-    pdf_loss.savefig(1002)
+        plt.figure(1002)
+        plt.yscale('log')
+        pylab.plot(history.history['reshape_3_loss'])
+        pylab.plot(history.history['val_reshape_3_loss'])
+        pylab.title('model loss (probability)')
+        pylab.ylabel('loss')
+        pylab.xlabel('epoch')
+        plt.grid(True)
+        pylab.legend(['train', 'test'], loc='upper right')
+        # pylab.savefig("loss_{Seed}.pdf".format(Seed=seed))
+        pdf_loss.savefig(1002)
 
     # plt.figure(1003)
     # pylab.plot(efficiency_4)
@@ -789,13 +985,45 @@ if predict :
 
     if train == False :
         #model.load_weights('weights.24-0.10.hdf5')#good  one
-        model.load_weights('weights.70-1.80.hdf5')
-        # model.load_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
-        #model.load_weights('../new_deltaphi/NNPixSeed_train_event_1000.h5')
+        #model.load_weights('weights.27-0.03.hdf5')
+        model.load_weights('NNPixSeed_train_event_{ev}_tris.h5'.format(ev=jetNum))
+        #model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
+        # model.load_weights('../new_deltaphi/NNPixSeed_train_event_1000.h5')
+
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
 
+    validation_par = np.float64(validation_par)
+
     np.savez("NNPixSeed_prediction_event_{ev}".format(ev=jetNum), validation_par=validation_par, validation_prob=validation_prob)
+
+    evaluated_loss =  loss_mse_select(target_,validation_par)
+
+
+# debug the loss-------------------------------------#
+    # byhandloss =0
+    # nnn=0;
+    # print("N of events=",len(target_))
+    # for ev in range(len(target_)) :
+    #     for x in range(jetDim) :
+    #         for y in range(jetDim) :
+    #             for trk in range (trackNum) :
+    #                     if(target_[ev][x][y][trk][4]!=0) :
+    #                         for par in range(parNum) :
+    #                             # print("x=",x,"y=",y,"trk=",trk,"par=",par,"valore=",target_[ev][x][y][trk][par], ", prediction=",validation_par[ev][x][y][trk][par])
+    #                             # byhandloss = byhandloss+(target_[ev][x][y][trk][par]-validation_par[ev][x][y][trk][par])**2
+    #                             byhandloss = byhandloss+(target_[ev][x][y][trk][par])
+    #
+    #                             nnn=nnn+1
+    # # print("TARGET=", target_)
+    # byhandloss=byhandloss/nnn
+    # print("number=",nnn)
+    # # print("validation_par=", validation_par)
+    # print(" LOSS:", evaluated_loss)
+    # print("EVALUATED LOSS:", K.eval(evaluated_loss))
+    # print("calculated by hand LOSS:", byhandloss)
+
+
 
     print("prediction: completed ")
 
@@ -843,6 +1071,7 @@ if output :
          for trk in range(trackNum) :
             canvasProb_jet.append(TCanvas("canvasProb_%d_%d" % (jet,trk), "canvasProb_%d_%d" % (jet,trk), 600,800))
             mapProbPredTot_jet.append(TH2F("mapProbPredTot_%d_%d" % (jet,trk), "mapProbPredTot_%d_%d" % (jet,trk), jetDim,-jetDim/2,jetDim/2,jetDim,-jetDim/2,jetDim/2))
+            # print(len(input_))
 
          for lay in range(layNum) :
 
@@ -886,6 +1115,7 @@ if output :
                      for trk in range(trackNum) :
                              if(trk>0 and target_prob[j_eff][x][y][trk] == 1) :
                                 print("Secondary map filled: map, x,y,jet",trk,x,y,jet)
+                            #  print("jet,trk,x,y,j_eff",jet,trk,x,y,j_eff)
                              mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
                              if target_prob[j_eff][x][y][trk] == 1 and lay==1:
                                  xx= float(target_[j_eff][x][y][trk][0])/float(0.01)
@@ -901,16 +1131,18 @@ if output :
                             #             print("________________________________________")
                             #             print("New not null, bin (x,y):",x,y)
                             #             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
-                             if validation_prob[j_eff][x][y][trk] > prob_thr and lay==1 :
-                                 xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)
-                                 yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)
+                             #if validation_prob[j_eff][x][y][trk] > prob_thr and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #QUESTA E' la COSA GIUSTA SE NON DEBUGGO
+                             if target_[j_eff][x][y][trk][4]!=0 and lay==1:
+                                 xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)*0.01
+                                 yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)*0.01
 
                                  graphPredTot[jet][lay].SetPoint(predPoint,x+xx_pr-jetDim/2,y+yy_pr-jetDim/2)
                                  predPoint = predPoint+1
                                  print("________________________________________")
-                                 print("New Pred, bin (x,y):",x,y)
+                                 print("New Pred, bin (x,y):",x-jetDim/2,y-jetDim/2)
+                                #  print("Flag=",target_[j_eff][x][y][trk][4], "track=", trk)
                                  print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
-                                 print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3])
+                                 print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
                             #  if(target_[j_eff][x][y][trk][0]!=0.0 or target_[j_eff][x][y][trk][1]!=0.0 or target_[j_eff][x][y][trk][2]!=0.0 or target_[j_eff][x][y][trk][3]!=0.0 ) :
                             #       print("---------------")
                             #       print("New Not-null-Target, bin (x,y):",x,y)
@@ -953,7 +1185,7 @@ if output :
              for x in range(jetDim) :
                  for y in range(jetDim) :
                      for trk in range(trackNum) :
-                         if validation_prob[j_eff][x][y][trk] > prob_thr :
+                         if validation_prob[j_eff][x][y][trk] > prob_thr :# and target_prob[j_eff][x][y][trk] == 1:
                              if validation_par[j_eff][x][y][trk][0] != 0 or validation_par[j_eff][x][y][trk][1] != 0  or validation_par[j_eff][x][y][trk][2] != 0 or validation_par[j_eff][x][y][3] != 0 :
                                  bins.append(validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])
                                  bins_pred.append(validation_par[j_eff][x][y][trk][par])
