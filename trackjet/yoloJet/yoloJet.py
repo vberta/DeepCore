@@ -106,17 +106,17 @@ latent_dim = 70 # Latent dimensionality of the encoding space.
 import random
 random.seed(seed)
 
-jetNum=5000
+jetNum=300 #5000
 valSplit=0.2
 
 jetDim=30
 trackNum =3# 10
-genTrackNum=3
+genTrackNum=5
 
 layNum = 4
 parNum = 4
 
-prob_thr =0.4
+prob_thr =0.9
 
 input_ = np.zeros(shape=(jetNum, jetDim,jetDim,layNum)) #jetMap
 target_ = np.zeros(shape=(jetNum,jetDim, jetDim,trackNum,parNum))#+1
@@ -541,7 +541,8 @@ if predict :
         #model.load_weights('toyNN_train_COMB_8_lay2_comp.h5')
 
         # model.load_weights('toyNN_train_COMB_8_bis_lay2_comp.h5')
-        model.load_weights('toyNN_train_15_lay2_comp.h5')
+        #model.load_weights('toyNN_train_15_lay2_comp.h5')
+        model.load_weights('toyNN_train_COMB_8_bis_lay2_comp.h5')
 
 
     [validation_par,validation_prob] = model.predict(input_)
@@ -649,9 +650,13 @@ if output :
                                  graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
                                  tarPoint = tarPoint+1
                             #  if validation_par[j_eff][x][y][trk][4] > 0.05 :
-                             if validation_prob[j_eff][x][y][trk] > prob_thr :
+                             if validation_prob[j_eff][x][y][trk] > prob_thr or  (validation_prob[j_eff][x][y][trk]>0.1 and trk>0) :
                                  xx_pr= validation_par[j_eff][x][y][trk][0]-layDist*(1-lay)*math.tan(validation_par[j_eff][x][y][trk][2])
                                  yy_pr= validation_par[j_eff][x][y][trk][1]-layDist*(1-lay)*math.tan(validation_par[j_eff][x][y][trk][3])
+                                 print("________________________________________")
+                                 print("New Pred, bin (x,y):",x,y)
+                                 print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
+                                 print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
                                  # print("PREDICTION_{TRK}_{LAY}_(x,y)=".format(TRK=predPoint, LAY=lay),x,y,xx,yy)
                                  # print("difference theta X=",validation_par[j_eff][x][y][trk][2]-target_[j_eff][x][y][trk][2])
                                  # print("difference theta Y=",validation_par[j_eff][x][y][trk][3]-target_[j_eff][x][y][trk][3])
@@ -682,3 +687,60 @@ if output :
              canvasProb[jet][trk].Write()
 
      output_file.Close()
+
+
+     print("parameter file: start looping")
+     pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_events_{ev}.pdf".format(ev=jetNum))
+     for par in range(parNum) :
+         bins = []# np.zeros(shape=(int(jetNum*valSplit)))
+         bins_pred = []
+         bins_target = []
+         nbin =0
+         #for j in range (int(len(input_)*valSplit)) :
+         for j in range(int(len(input_))) : #ONLY WITH INPUT DIFFERENT FROM TRAINING!!!!!!
+             j_eff = j
+            #j_eff = j+int(len(input_)*(1-valSplit))
+             for x in range(jetDim) :
+                 for y in range(jetDim) :
+                     for trk in range(trackNum) :
+                         if validation_prob[j_eff][x][y][trk] > prob_thr :
+                             if validation_par[j_eff][x][y][trk][0] != 0 or validation_par[j_eff][x][y][trk][1] != 0  or validation_par[j_eff][x][y][trk][2] != 0 or validation_par[j_eff][x][y][3] != 0 :
+                                 if target_[j_eff][x][y][trk][par]!=0 :
+                                     bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])/float(target_[j_eff][x][y][trk][par]))
+                                 bins_pred.append(validation_par[j_eff][x][y][trk][par])
+                                 bins_target.append(target_[j_eff][x][y][trk][par])
+                                 nbin = nbin+1
+
+         plt.figure()
+        #  plt.yscale('log')
+         pylab.hist(bins,30,range=(-1,1), facecolor='green', alpha=0.75)
+         pylab.title('Residual distribution_par{PAR}'.format(PAR=par))
+         pylab.ylabel('entry')
+         pylab.xlabel('(prediction-target)/target')
+         plt.grid(True)
+        #  plt.ylim((1,1000))
+        #  plt.xlim(-1,1)
+         # pylab.savefig("parameter_error_{EPOCH}_{PAR}.pdf".format(PAR=par,EPOCH=epoch))
+         pdf_par.savefig()
+
+         plt.figure()
+        #  plt.yscale('log')
+         pylab.hist(bins_target,50, facecolor='red', alpha=0.75)
+         pylab.title('Target distribution_par{PAR}'.format(PAR=par))
+         pylab.ylabel('entry')
+         pylab.xlabel('target')
+         plt.grid(True)
+        #  plt.ylim((1,1000))
+         pdf_par.savefig()
+
+         plt.figure()
+        #  plt.yscale('log')
+         pylab.hist(bins_pred,50, facecolor='blue', alpha=0.75)
+         pylab.title('Prediction distribution_par{PAR}'.format(PAR=par))
+         pylab.ylabel('entry')
+         pylab.xlabel('prediction')
+         plt.grid(True)
+        #  plt.ylim((1,1000))
+         pdf_par.savefig()
+
+     pdf_par.close()
