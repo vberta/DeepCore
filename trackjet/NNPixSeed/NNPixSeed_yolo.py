@@ -41,6 +41,7 @@ from numpy import concatenate as concatenatenp
 #
 ######################################
 
+# print("debugz - inizio")
 
 parser = argparse.ArgumentParser(description="Toy MC and NN for high pt jet clustering")
 parser.add_argument(
@@ -86,8 +87,10 @@ parser.add_argument(
     type=str,
     help='name of the MC input file')
 
+# print("debugz - after parz")
 
 args = parser.parse_args()
+# print("debugz - after parz2")
 
 seed=args.Seed
 convert = args.Convert
@@ -95,33 +98,41 @@ output = args.Output
 input_name = args.Input
 train = args.Training
 predict = args.Predict
+# print("debugz - after parz3")
+# print("debugz - pre sess")
 
-with tf.Session(config=tf.ConfigProto(
-                   intra_op_parallelism_threads=40)) as sess:
-   K.set_session(sess)
+# with tf.Session(config=tf.ConfigProto(
+#                    intra_op_parallelism_threads=40)) as sess:
+#    K.set_session(sess)
+# print("debugz - after sess")
 
 class wHistory(keras.callbacks.Callback):
    def on_epoch_end(self, epoch, logs={}):
        if epoch % 10 == 0 :
                self.model.save("trained"+str(epoch+0)+".h5")
+# print("debugz - after hist")
 
 wH = wHistory()
+# print("debugz - after roba a  caso")
 
 
 ########################internal parameters########################
 standard_mse = False
 noProb = False
-uproot_flag = False
-numPrint = 20
-continue_training = True
+uproot_flag = True      #use small local data
+numPrint = 60
+continue_training = False
 no_pt_eta = False
 ROI_loss = True
-outEvent= 2 #complete plots for this only
+outEvent= 2 #complete plots for this event only
+onData=False
+ptSample = True #sample with 1/pt target #PTLINE
+check_sample = False
 
-
-batch_size = 64#64#128#32 # Batch size for training. //32 is the good
-epochs = 35 # Number of epochs to train for.
-start_epoch = 350 #260 sono senza dropout
+batch_size = 1#32#64#64#128#32 # Batch size for training. //64 is the good
+print("THE BATCH SIZE IS 32")
+epochs = 2 # Number of epochs to train for.
+start_epoch = 0 #260 sono senza dropout #260-285 con dropout
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 valSplit=0.2
@@ -133,7 +144,11 @@ jetDim=30
 trackNum =3# 10
 genTrackNum=3
 layNum = 4
-parNum = 4
+if(ptSample) :
+     parNum=5
+else :
+    parNum = 4
+# print("debugz - after par")
 
 
 
@@ -275,8 +290,8 @@ def loss_ROI_crossentropy(target, output):
     output = math_ops.log(output / (1 - output))
     retval = nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=10)#900=works #2900=200x200, 125=30x30
     retval = retval*wei
-    # print("output shape ", retval.shape)
-    return tf.reduce_sum(retval, axis=None)/(tf.reduce_sum(wei,axis=None))
+    # print("output xentr ", retval)
+    return tf.reduce_sum(retval, axis=None)/(tf.reduce_sum(wei,axis=None)+0.00001)
     # return K.mean(retval, axis=-1)
 
 # def loss_weighted_crossentropy(target, output):
@@ -311,15 +326,16 @@ def loss_mse_select(y_true, y_pred) :
     out =K.square(pred-true)*wei
     # out = tf.transpose(out, perm =[1,2,3,4,0])
     # print("len wei=",(tf.reduce_sum(wei,axis=None)*4))
-    return tf.reduce_sum(out, axis=None)/(tf.reduce_sum(wei,axis=None)*4) #4=numPar
+    return tf.reduce_sum(out, axis=None)/(tf.reduce_sum(wei,axis=None)*4) #4=parNum
     # return K.mean(out, axis=-1)
 
 def loss_mse_select_clipped(y_true, y_pred) :
     wei = y_true[:,:,:,:,-1:]
     pred = y_pred[:,:,:,:,:-1]
     true =  y_true[:,:,:,:,:-1]
-    out =K.square(tf.clip_by_value(pred-true,-0.8,0.8))*wei
-    return tf.reduce_sum(out, axis=None)/(tf.reduce_sum(wei,axis=None)*4) #4=numPar
+    out =K.square(tf.clip_by_value(pred-true,-5,5))*wei
+    # print("inside loss =",out)
+    return tf.reduce_sum(out, axis=None)/(tf.reduce_sum(wei,axis=None)*5+0.00001) #5=parNum
 
 
 def Generator(files) :
@@ -329,7 +345,7 @@ def Generator(files) :
             tfile = uproot.open(f)
             # print("file=",f)
 
-            tree = tfile["demo"]["NNClustSeedInputTree"]
+            tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
             input_ = tree.array("cluster_measured")
             input_jeta = tree.array("jet_eta")
             input_jpt = tree.array("jet_pt")
@@ -359,7 +375,7 @@ def Generator(files) :
             # print("file dimension=", len(input_jeta))
 
             for k in range(len(input_jeta)/batch_size) :
-                # print("range=", k)
+                # print("range=", k, len(input_jeta), batch_size)
                 if(not noProb) :
                     yield [input_[batch_size*(k):batch_size*(k+1)],input_jeta[batch_size*(k):batch_size*(k+1)],input_jpt[batch_size*(k):batch_size*(k+1)]], [target_[batch_size*(k):batch_size*(k+1)],target_prob[batch_size*(k):batch_size*(k+1)]]
                 else :
@@ -513,6 +529,7 @@ if convert :
 
 
 #---------------------------------------------numpy INPUT -------------------------------#
+# print("debugz - pre convert")
 if convert==False and gpu==True:
 
     old_loading= False
@@ -553,22 +570,77 @@ if convert==False and gpu==True:
         import uproot
         # tfile = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_1.root")
         tfile = uproot.open(input_name)
-        tree = tfile["demo"]["NNClustSeedInputTree"]
+        if(onData) :
+                tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
+        else :
+                tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
         input_ = tree.array("cluster_measured")
         input_jeta = tree.array("jet_eta")
         input_jpt = tree.array("jet_pt")
-        target_ = tree.array("trackPar")
-        target_prob = tree.array("trackProb")
+        if(not onData):
+             target_ = tree.array("trackPar")
+        if(not onData) :
+             target_prob = tree.array("trackProb")
+
 
         if(standard_mse) :
             print("slicing...")
             target_ = target_[:,:,:,:,:-1]
 
-        if(ROI_loss) :
+        if(ROI_loss and (not onData)) :
             wei = target_[:,:,:,:,-1:]
             nev = len(target_prob)
             target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,trackNum,1))
             target_prob = concatenatenp([target_prob,wei],axis=4)
+            # target_ = concatenatenp([target_[:,:,:,:,:-2],wei],axis=4)#PTLINE
+
+
+
+        print("event 1, file 1243")
+
+        print("eta",input_jeta[0])
+        print("pt",input_jpt[0])
+        # input_jeta[0]=0
+        # input_jpt[0]=0
+        for x in range(jetDim) :
+            for y in range(jetDim) :
+                for t in range(trackNum) :
+                    if(target_prob[0][x][y][t][1]<0.1 or target_prob[0][x][y][t][1]>2) :
+                        target_prob[0][x][y][t][1]=0
+                    # target_prob[0][x][y][t][0]=0
+                    print("prob:x,y,trk", x,y,t," value=",target_prob[0][x][y][t])
+                    # if(target_prob[0][x][y][t][1]>2 or 1) :
+                    # target_prob[0][x][y][t][1]=1
+                    # target_prob[0][x][y][t][1]=1
+                    # print("prob:x,y,trk", x,y,t," value=",target_prob[1][x][y][t])
+
+                    for p in range (parNum+1) :
+                        if(target_[0][x][y][t][5]<0.1 or target_[0][x][y][t][5]>2) :
+                            target_[0][x][y][t][5]=0
+                        print("par:x,y,trk, par", x,y,t,p," value=",target_[1][x][y][t][p])
+        for x in range(jetDim) :
+            for y in range(jetDim) :
+                for l in range(4) :
+                    # input_[0][x][y][l] =0
+                    print("cluster input:x,y,lay", x,y,l," value=",input_[1][x][y][l])
+
+        # print("input eta", np.sum(input_jpt[0:1]))
+        # print("input pt", np.sum(input_jeta[0:1]))
+        # print("input targ", np.sum(target_[0:1,:,:,:,:]))
+        # print("inputprob ", np.sum(target_prob[0:1,:,:,:]))
+        # print("inputinp ", np.sum(input_[0:1,:,:,:]))
+
+        input_jpt=input_jpt[0:10]
+        input_jeta=input_jeta[0:10]
+        target_ =target_[0:10,:,:,:,:]
+        target_prob=target_prob[0:10,:,:,:]
+        input_= input_[0:10,:,:,:]
+        #test loss
+        # target_test = target_[0:1,:,:,:,:]
+        # target_prob_test = target_prob[0:1,:,:,:,:]
+        #
+        # print("Loss mse", loss_mse_select_clipped(target_test, target_test))
+        # print("Loss xentr", loss_ROI_crossentropy(target_prob_test, target_prob_test))
 
         # if(standard_mse) : //too slow! not used
         #     target_ = np.zeros(shape=(len(target_5par),jetDim, jetDim,trackNum,parNum))
@@ -597,7 +669,7 @@ if convert==False and gpu==True:
         #
         #
         #     tfile_f = uproot.open("/home/users/bertacch/trackjet/NNPixSeed/_newWorkCUDA/data/histo_10k_{n}.root".format(n=f+1))
-        #     tree_f = tfile["demo"]["NNClustSeedInputTree"]
+        #     tree_f = tfile["demo"]["NNClustSeedInputSimHitTree"]
         #     input__f = tree_f.array("cluster_measured")
         #     input_jeta_f = tree_f.array("jet_eta")
         #     input_jpt_f = tree_f.array("jet_pt")
@@ -750,6 +822,59 @@ if convert==False and gpu==True:
     # a = tf.Print(a, [a], message="This is testDim: ")
     # print("222",testDim[2,2,2,0])
 
+#------ check nan/inf in the sample -------------#
+
+if check_sample :
+    import uproot
+    print("checksample!")
+    files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_*.root')
+    files_validation=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_validation/ntuple_simHit_4LayClustPt_*.root')
+    # files = glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_test/ntuple_simHit_4LayClustPt_*.root')
+    # files_validation = glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_test/ntuple_simHit_4LayClustPt_*.root')
+
+    print("number of  file=", len(files))
+    for f in files :
+            tfile = uproot.open(f)
+            tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
+            input_ = tree.array("cluster_measured")
+            input_jeta = tree.array("jet_eta")
+            input_jpt = tree.array("jet_pt")
+            target_ = tree.array("trackPar")
+            target_prob = tree.array("trackProb")
+
+            # weicheck = target_[:,:,:,:,-1:]
+            # print("file target ",f," wei sum=", K.eval(tf.reduce_sum(weicheck,axis=None)))
+            print("file input ",f,", NAN=",np.isnan(np.sum(input_)))
+            print("file input ",f,", inf=",np.isinf(np.sum(input_)))
+            print("file input jeta ",f,", NAN=",np.isnan(np.sum(input_jeta)))
+            print("file input jeta ",f,", inf=",np.isinf(np.sum(input_jeta)))
+            print("file input jpt ",f,", NAN=",np.isnan(np.sum(input_jpt)))
+            print("file input jpt ",f,", inf=",np.isinf(np.sum(input_jpt)))
+            print("file target ",f,", NAN=",np.isnan(np.sum(target_)))
+            print("file target ",f,", inf=",np.isinf(np.sum(target_)))
+            print("file target prob ",f,", NAN=",np.isnan(np.sum(target_prob)))
+            print("file target prob ",f,", inf=",np.isinf(np.sum(target_prob)))
+    for f in files_validation :
+            tfile = uproot.open(f)
+            tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
+            input_ = tree.array("cluster_measured")
+            input_jeta = tree.array("jet_eta")
+            input_jpt = tree.array("jet_pt")
+            target_ = tree.array("trackPar")
+            target_prob = tree.array("trackProb")
+
+            # weicheck = target_[:,:,:,:,-1:]
+            # print("file target ",f," wei sum=", K.eval(tf.reduce_sum(weicheck,axis=None)))
+            print("file input ",f,", NAN=",np.isnan(np.sum(input_)))
+            print("file input ",f,", inf=",np.isinf(np.sum(input_)))
+            print("file input jeta ",f,", NAN=",np.isnan(np.sum(input_jeta)))
+            print("file input jeta ",f,", inf=",np.isinf(np.sum(input_jeta)))
+            print("file input jpt ",f,", NAN=",np.isnan(np.sum(input_jpt)))
+            print("file input jpt ",f,", inf=",np.isinf(np.sum(input_jpt)))
+            print("file target ",f,", NAN=",np.isnan(np.sum(target_)))
+            print("file target ",f,", inf=",np.isinf(np.sum(target_)))
+            print("file target prob ",f,", NAN=",np.isnan(np.sum(target_prob)))
+            print("file target prob ",f,", inf=",np.isinf(np.sum(target_prob)))
 #-----------------------------------------KERAS MODEL -----------------------------------#
 
 if train or predict :
@@ -850,36 +975,79 @@ if train or predict :
     # conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv30_9)
     # reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
 
-    # WORKING NO Dropout
-    conv30_9 = Conv2D(50,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)#20 instead of 50
-    conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
-    drop1 = Dropout(0.1)(conv30_7)
-    conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(drop1)#(conv30_7)#
-    conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
-    conv15_5 = Conv2D(15,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
 
-    conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
-    drop2 = Dropout(0.2)(conv15_3_1)
-    conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(drop2)#(conv15_3_1)
-    if(standard_mse):
-        conv15_3_3 = Conv2D(12,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
-        conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
-        reshaped = Reshape((jetDim,jetDim,trackNum,parNum))(conv15_3)
+
+
+
+
+
+
+
+
+
+
+
+
+    # WORKING FOR SIMHIT  BEFORE PT------------------------------------------------------------------------------------------------------------------------------
+    if(not ptSample) : #PTLINE
+        conv30_9 = Conv2D(50,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)#20 instead of 50
+        conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
+        # drop1 = Dropout(0.1)(conv30_7)
+        conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)#
+        conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
+        conv15_5 = Conv2D(15,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
+
+        conv15_3_1 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
+        # drop2 = Dropout(0.2)(conv15_3_1)
+        conv15_3_2 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_1)
+        if(standard_mse):
+            conv15_3_3 = Conv2D(12,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
+            conv15_3 = Conv2D(12,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
+            reshaped = Reshape((jetDim,jetDim,trackNum,parNum))(conv15_3)
+        else :
+            conv15_3_3 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
+            conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
+            reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
+
+        if(not noProb) :
+            conv12_3_1 = Conv2D(12,3, data_format="channels_last", activation='relu', padding="same")(conv15_5)  #new
+            conv1_3_2 = Conv2D(9,3, data_format="channels_last", activation='relu', padding="same")(conv12_3_1) #drop7lb   #new
+            conv1_3_3 = Conv2D(7,3, data_format="channels_last", activation='relu',padding="same")(conv1_3_2) #new
+            if(ROI_loss) :
+                conv1_3_1 = Conv2D(6,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
+                reshaped_prob = Reshape((jetDim,jetDim,trackNum,2))(conv1_3_1)
+            else :
+                conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
+                reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
+
+
+    # CLEANED VERSION WITH PT #PTLINE (BLOCK)
     else :
-        conv15_3_3 = Conv2D(15,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
-        conv15_3 = Conv2D(15,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
+        conv30_9 = Conv2D(50,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)#20 instead of 50
+        conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
+        conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)#
+        conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
+        conv15_5 = Conv2D(18,3, data_format="channels_last", activation='relu',padding="same")(conv20_5)
+
+        conv15_3_1 = Conv2D(18,3, data_format="channels_last",activation='relu', padding="same")(conv15_5)
+        conv15_3_2 = Conv2D(18,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_1)
+        conv15_3_3 = Conv2D(18,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
+        conv15_3 = Conv2D(18,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
         reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
 
-    if(not noProb) :
         conv12_3_1 = Conv2D(12,3, data_format="channels_last", activation='relu', padding="same")(conv15_5)  #new
         conv1_3_2 = Conv2D(9,3, data_format="channels_last", activation='relu', padding="same")(conv12_3_1) #drop7lb   #new
         conv1_3_3 = Conv2D(7,3, data_format="channels_last", activation='relu',padding="same")(conv1_3_2) #new
-        if(ROI_loss) :
-            conv1_3_1 = Conv2D(6,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
-            reshaped_prob = Reshape((jetDim,jetDim,trackNum,2))(conv1_3_1)
-        else :
-            conv1_3_1 = Conv2D(3,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
-            reshaped_prob = Reshape((jetDim,jetDim,trackNum))(conv1_3_1)
+        conv1_3_1 = Conv2D(6,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
+        reshaped_prob = Reshape((jetDim,jetDim,trackNum,2))(conv1_3_1)
+
+
+
+
+
+
+
+
 
 
 
@@ -1040,7 +1208,7 @@ if train or predict :
         model = Model([NNinputs,NNinputs_jeta,NNinputs_jpt],reshaped)
 
     # anubi = keras.optimizers.Adam(lr=0.0001)
-    anubi = keras.optimizers.Adam(lr=0.0001)#5 (0.1 su working drop nopt eta) (0.2 su current training per il clipped subito) 0.5 su 200flitri
+    anubi = keras.optimizers.Adam(lr=0.0002)#5 (0.1 su working drop nopt eta) (0.2 su current training per il clipped subito) 0.5 su 200flitri
 
     # anubi = keras.optimizers.Adam(amsgrad=True)
 
@@ -1138,8 +1306,33 @@ combined_training = False
 # files_validation=glob.glob('/home/users/bertacch/trackjet/NNClustSeed/validation/100k_multiplied_4hit_30/histo*.root')
 
 #4hit multiplied 30x30 CLUSTER CENTER 1M
-files=glob.glob('/home/users/bertacch/trackjet/NNClustSeed/data/1M_multiplied_4hit_30/histo*.root')
-files_validation=glob.glob('/home/users/bertacch/trackjet/NNClustSeed/validation/1M_multiplied_4hit_30/histo*.root')
+# files=glob.glob('/home/users/bertacch/trackjet/NNClustSeed/data/1M_multiplied_4hit_30/histo*.root')
+# files_validation=glob.glob('/home/users/bertacch/trackjet/NNClustSeed/validation/1M_multiplied_4hit_30/histo*.root')
+
+#SIM HIT info, 4hit (actually dthr=2), multiplied, 30x30
+# files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4M/181031_000836/0000/histo*.root')
+# files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4M/181031_000836/0001/histo*.root') #notice 0001, different folder form "files"
+
+#SIM HIT full info, 4hit (actually dthr=2), multiplied, 30x30, pt info DO NOT USE!!!!!!!!!!!!!!!!!!!!!!!!!! BUG INSIDE PT
+# files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0004/ntuple*.root')
+# files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0005/ntuple*.root')
+
+#come sopra ma: 200k train, 50k valdiaiton
+# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_11*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_12*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_13*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_14*.root')
+# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_15*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_16*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_17*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_4M_18*.root')
+# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_121*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_122*.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_123*.root')
+# files =glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_124*.root') LUI E NAN
+# files =glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_1240.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_1241.root') LUI NO NAN
+files = glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_1243.root') #LUI E' NAN
+#+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_1243.root')+glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train/ntuple_simHit_4LayClustPt_1244.root')
+files_validation=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_validation/ntuple_simHit_4LayClustPt_1310.root')
+
+#PROVA
+# files =  glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_test/ntuple_simHit_4LayClustPt_100ev.root')
+# validation_files =  glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_test/ntuple_simHit_4LayClustPt_100ev.root')
+# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/training_fullSimHit_pt/ntuple_simHit_4LayClustPt_100ev2.root') + glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/training_fullSimHit_pt/ntuple_simHit_4LayClustPt_100ev.root')
+# files_validation=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/training_fullSimHit_pt/ntuple_simHit_4LayClustPt_100ev2.root')
+
 
 print("number of  file=", len(files))
 print("number of file validation=", len(files_validation))
@@ -1149,33 +1342,76 @@ tot_events = 0
 tot_events_validation = 0
 if(uproot_flag) :
     tfile = uproot.open(input_name)
-    tree = tfile["demo"]["NNClustSeedInputTree"]
-    input_jeta = tree.array("jet_eta")
-    tot_events = len(input_jeta)
+    if(onData):
+        tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
+    else :
+        tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
+
+    input_jeta2 = tree.array("jet_eta")
+    tot_events = len(input_jeta2)
+
     tot_events_validation=tot_events*valSplit
     tot_events=tot_events*(1-valSplit)
 else :
     for f in files :
         tfile = uproot.open(f)
-        tree = tfile["demo"]["NNClustSeedInputTree"]
-        input_jeta = tree.array("jet_eta")
-        tot_events = tot_events+len(input_jeta)
+        tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
+        input_jeta2 = tree.array("jet_eta")
+        tot_events = tot_events+len(input_jeta2)
     for f in files_validation :
         tfile = uproot.open(f)
-        tree = tfile["demo"]["NNClustSeedInputTree"]
-        input_jeta = tree.array("jet_eta")
-        tot_events_validation = tot_events_validation+len(input_jeta)
+        tree = tfile["demo"]["NNClustSeedInputSimHitTree"]
+        input_jeta2 = tree.array("jet_eta")
+        tot_events_validation = tot_events_validation+len(input_jeta2)
 
 jetNum = tot_events
 jetNum_validation = tot_events_validation
 print("total number of events =", jetNum)
 print("total number of events validation=", jetNum_validation)
 
-checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=True)
+checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=False)
+
+class WeightsSaver(Callback):
+    def __init__(self, N):
+        self.N = N
+        self.batch = 0
+
+    def on_batch_end(self, batch, logs={}):
+        if self.batch % self.N == 0:
+            name = 'weights%08d.h5' % self.batch
+            self.model.save_weights(name)
+        self.batch += 1
+
+
+class NBatchLogger(Callback):
+    """
+    A Logger that log average performance per `display` steps.
+    """
+    def __init__(self, display):
+        self.step = 0
+        self.display = display
+        self.metric_cache = {}
+
+    def on_batch_end(self, batch, logs={}):
+        self.step += 1
+        for k in self.params['metrics']:
+            if k in logs:
+                self.metric_cache[k] = self.metric_cache.get(k, 0) + logs[k]
+        if self.step % self.display == 0:
+            metrics_log = ''
+            for (k, v) in self.metric_cache.items():
+                val = v / self.display
+                if abs(val) > 1e-3:
+                    metrics_log += ' - %s: %.4f' % (k, val)
+                else:
+                    metrics_log += ' - %s: %.4e' % (k, val)
+            print('step: {}/{} ... {}'.format(self.step,
+                                          self.params['steps'],
+                                          metrics_log))
+            self.metric_cache.clear()
 
 if train :
     stepNum = jetNum/batch_size
-
 
 
     if continue_training :
@@ -1209,9 +1445,9 @@ if train :
         # model.load_weights('NNPixSeed_train_event_232072.h5')
         #model.load_weights('NNPixSeed_train_event_232072_13.h5') #this is the good one
 
-        #model.load_weights('weights.166-0.64.hdf5')
-        model.load_weights('NNPixSeed_train_event_1106439_22.h5')
-
+        # model.load_weights('NNPixSeed_train_event_1106439_INTEGRATION.h5')
+        # model.load_weights('NNPixSeed_train_event_1106439_17.h5')
+        model.load_weights('NNPixSeed_train_event_20epSimHitOnly.h5')
 
         if(not noProb) :
             if(uproot_flag) :
@@ -1224,7 +1460,9 @@ if train :
             else :
                 history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer], initial_epoch=start_epoch)
 
-        model.save_weights('NNPixSeed_train_event_{ev}_23.h5'.format(ev=jetNum))
+        model.save_weights('NNPixSeed_train_event_{ev}_ep{ep}_simHitOnly.h5'.format(ev=jetNum, ep=epochs+start_epoch))
+        model.save('NNPixSeed_model_event{ev}_ep{ep}_simHitOnly.h5'.format(ev=jetNum, ep=epochs+start_epoch))
+
     # elif combined_training :
     #     # model.load_weights('toyNN_train_bis_17_lay2_comp.h5')
     #     model.load_weights('toyNN_train_COMB_8_lay2_comp.h5')
@@ -1237,7 +1475,8 @@ if train :
 
         if(not noProb) :
             if(uproot_flag and (not Deb1ev)) :
-                history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer])
+                print("training!")
+                history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs, verbose = 2, validation_split=valSplit,  callbacks=[checkpointer, NBatchLogger(1)], shuffle = False)
             elif(Deb1ev) :
                 history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs, verbose = 2)#, validation_split=valSplit,  callbacks=[checkpointer])
             else :
@@ -1251,7 +1490,9 @@ if train :
                 history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, callbacks=[checkpointer])
 
         # pdf_par.close()
-        model.save_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
+        # model.save_weights('NNPixSeed_train_event_{ev}.h5'.format(ev=jetNum))
+        model.save_weights('NNPixSeed_train_event_{ev}_ep{ep}_simHitOnly.h5'.format(ev=jetNum, ep=epochs))
+        model.save('NNPixSeed_model_event{ev}_ep{ep}_simHitOnly.h5'.format(ev=jetNum, ep=epochs))
 
 
     pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_event{ev}.pdf".format( Epoch=epochs,ev=jetNum))
@@ -1347,8 +1588,11 @@ if predict :
         #model.load_weights('NNPixSeed_train_event_{ev}_bis.h5'.format(ev=jetNum))
         # model.load_weights('../new_deltaphi/NNPixSeed_train_event_1000.h5')
 
-        #model.load_weights('weights.166-0.64.hdf5')
-        model.load_weights('NNPixSeed_train_event_1106439_17.h5')#poster one
+        #model.load_weights('NNPixSeed_train_event_2690140.h5') STAVO USANDO QUESTO NON SO PERCHe probabilmente e new integration post simhit
+        # model.load_weights('NNPixSeed_train_event_1106439_INTEGRATION.h5')
+        model.load_weights('models4CMSSW/NNPixSeed_model_event2690140_ep44_simHitOnly.h5')
+
+        # model.load_weights('NNPixSeed_train_event_1106439_17.h5')#poster one
 
     if(not noProb) :
         [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
@@ -1398,7 +1642,8 @@ if output :
      if predict == False :
 
         print("prediction loading: start")
-        loadpred = np.load("NNPixSeed_prediction_event_106.4.npz".format(ev=jetNum))
+        loadpred = np.load("NNPixSeed_prediction_event_{ev}.npz".format(ev=jetNum))#106.4
+        # loadpred = np.load("NNPixSeed_prediction_event_53.6.npz".format(ev=jetNum))#106.4
 
         validation_par = loadpred['validation_par']
         if(not noProb) :
@@ -1407,7 +1652,8 @@ if output :
         print("prediction loading: completed")
 
      if(ROI_loss) :
-         target_prob = target_prob[:,:,:,:,:-1]
+         if(not onData) :
+              target_prob = target_prob[:,:,:,:,:-1]
          validation_prob = validation_prob[:,:,:,:,:-1]
 
      from ROOT import *
@@ -1486,18 +1732,23 @@ if output :
                             #  print("jet,trk,x,y,j_eff",jet,trk,x,y,j_eff)
                         if(not noProb) :
                              mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
-                             if target_prob[j_eff][x][y][trk] == 1 and lay==1:
-                                 xx= float(target_[j_eff][x][y][trk][0])/float(0.01)*0.01#normaliz. factor
-                                 yy= float(target_[j_eff][x][y][trk][1])/float(0.015)*0.01
-                                 graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
-                                 tarPoint = tarPoint+1
+                             if(not onData) :
+                                 if target_prob[j_eff][x][y][trk] == 1 and lay==1:
+                                     xx= float(target_[j_eff][x][y][trk][0])/float(0.01)*0.01#normaliz. factor
+                                     yy= float(target_[j_eff][x][y][trk][1])/float(0.015)*0.01
+                                     graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
+                                     tarPoint = tarPoint+1
 
-                                 x0,y0 = prop_on_layer(x+xx-jetDim/2, y+yy-jetDim/2,target_[j_eff][x][y][trk][2]*0.01,target_[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],0)
-                                 x2,y2 = prop_on_layer(x+xx-jetDim/2, y+yy-jetDim/2,target_[j_eff][x][y][trk][2]*0.01,target_[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],2)
-                                 x3,y3 = prop_on_layer(x+xx-jetDim/2, y+yy-jetDim/2,target_[j_eff][x][y][trk][2]*0.01,target_[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],3)
-                                 graphTargetTot[jet][0].SetPoint(tarPoint,x0,y0)
-                                 graphTargetTot[jet][2].SetPoint(tarPoint,x2,y2)
-                                 graphTargetTot[jet][3].SetPoint(tarPoint,x3,y3)
+                                     x0,y0 = prop_on_layer(x+xx-jetDim/2, y+yy-jetDim/2,target_[j_eff][x][y][trk][2]*0.01,target_[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],0)
+                                     x2,y2 = prop_on_layer(x+xx-jetDim/2, y+yy-jetDim/2,target_[j_eff][x][y][trk][2]*0.01,target_[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],2)
+                                     x3,y3 = prop_on_layer(x+xx-jetDim/2, y+yy-jetDim/2,target_[j_eff][x][y][trk][2]*0.01,target_[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],3)
+                                     graphTargetTot[jet][0].SetPoint(tarPoint,x0,y0)
+                                     graphTargetTot[jet][2].SetPoint(tarPoint,x2,y2)
+                                     graphTargetTot[jet][3].SetPoint(tarPoint,x3,y3)
+                                    #  print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+                                    #  print(" bin (x,y):",x-jetDim/2,y-jetDim/2, " target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
+                                    #  print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+
                                 #  print(" x0,y0=",x0,y0, ",x1,y1=",x+xx-jetDim/2, y+yy-jetDim/2, "x2,y2=",x2,y2," x3,y3=",x3,y3,)
                                 #  print("-----------------------------------------------------")
 
@@ -1525,9 +1776,9 @@ if output :
                                  x0,y0 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],0)
                                  x2,y2 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],2)
                                  x3,y3 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],3)
-                                 graphPredTot[jet][0].SetPoint(tarPoint,x0,y0)
-                                 graphPredTot[jet][2].SetPoint(tarPoint,x2,y2)
-                                 graphPredTot[jet][3].SetPoint(tarPoint,x3,y3)
+                                 graphPredTot[jet][0].SetPoint(predPoint,x0,y0)
+                                 graphPredTot[jet][2].SetPoint(predPoint,x2,y2)
+                                 graphPredTot[jet][3].SetPoint(predPoint,x3,y3)
 
 
 
@@ -1539,7 +1790,8 @@ if output :
                                  print("________________________________________")
                                  print("New Pred, bin (x,y):",x-jetDim/2,y-jetDim/2)
                                 #  print("Flag=",target_[j_eff][x][y][trk][4], "track=", trk)
-                                 print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
+                                 if(not onData):
+                                     print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
                                  print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
                                  print(" x0,y0=",x0,y0," x2,y2=",x2,y2," x3,y3=",x3,y3,)
                             #  if(target_[j_eff][x][y][trk][0]!=0.0 or target_[j_eff][x][y][trk][1]!=0.0 or target_[j_eff][x][y][trk][2]!=0.0 or target_[j_eff][x][y][trk][3]!=0.0 ) :
@@ -1548,12 +1800,12 @@ if output :
                                 #   print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
                                 #   print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3])
                         else :
-                             if target_[j_eff][x][y][trk][4] != 0 and lay==1:
+                             if target_[j_eff][x][y][trk][5] != 0 and lay==1:
                                  xx= float(target_[j_eff][x][y][trk][0])/float(0.01)
                                  yy= float(target_[j_eff][x][y][trk][1])/float(0.015)
                                  graphTargetTot[jet][lay].SetPoint(tarPoint,x+xx-jetDim/2,y+yy-jetDim/2)
                                  tarPoint = tarPoint+1
-                             if target_[j_eff][x][y][trk][4]!=0 and lay==1:
+                             if target_[j_eff][x][y][trk][5]!=0 and lay==1:
                                  xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)*0.01
                                  yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)*0.01
 
@@ -1567,7 +1819,7 @@ if output :
 
 
 
-     RGB=True
+     RGB=False
      output_file = TFile("NNPixSeed_mapValidation_events_{ev}.root".format(ev=jetNum),"recreate")
      from array import array as array2
     #  from ROOT import gStyle, TColor
@@ -1655,7 +1907,7 @@ if output :
              canvasTot[jet][lay].cd()
              mapTot[jet][lay].GetXaxis().SetRangeUser(-jetDim,jetDim)
              mapTot[jet][lay].GetYaxis().SetRangeUser(-jetDim,jetDim)
-             mapTot[jet][lay].SetTitle("Pixel Map, cluster %d, layer %d" % (jet, lay+1))
+             mapTot[jet][lay].SetTitle("Pixel Map, cluster %d, layer %d, pt=%f, eta=%f" % (jet, lay+1, input_jpt[jet],input_jeta[jet]))
              mapTot[jet][lay].GetXaxis().SetTitle("x [pixel]")
              mapTot[jet][lay].GetYaxis().SetTitle("y [pixel]")
              mapTot[jet][lay].GetYaxis().SetTitleOffset(1)
@@ -1675,7 +1927,8 @@ if output :
              if(jet==outEvent and RGB):
                  canvasTot[jet][lay].SaveAs("RGB_PixelMap_input_layer%d_event%d.pdf" % (lay,jet))
 
-             graphTargetTot[jet][lay].Draw("SAME P")
+             if (not onData) :
+                 graphTargetTot[jet][lay].Draw("SAME P")
              graphPredTot[jet][lay].Draw("SAME P")
 
              graphTargetTot[jet][lay].SetLineColor(0)
@@ -1693,7 +1946,8 @@ if output :
              legTot = TLegend(0.1,0.9,0.3,0.8);
             #  legTot.SetHeader("CMS Private")
             #  legTot.AddEntry(mapTot[jet][lay], "Pixel ADC counts")
-             legTot.AddEntry(graphTargetTot[jet][lay], "Target")
+             if (not onData) :
+                 legTot.AddEntry(graphTargetTot[jet][lay], "Target")
              legTot.AddEntry(graphPredTot[jet][lay], "Prediction")
              legTot.SetTextSize(0.03);
              legTot.Draw("SAME")
@@ -1719,7 +1973,8 @@ if output :
              mapProbPredTot[jet][trk].GetYaxis().SetTitleSize(0.06)
              mapProbPredTot[jet][trk].GetXaxis().SetTitleOffset(0.7)
              mapProbPredTot[jet][trk].GetYaxis().SetTitleOffset(0.6)
-             graphTargetTot[jet][1].Draw("SAME P")
+             if (not onData) :
+                 graphTargetTot[jet][1].Draw("SAME P")
              graphPredTot[jet][1].Draw("SAME P")
 
              legTitleProb = TLegend(0.1,1,0.7,0.85);
@@ -1730,7 +1985,8 @@ if output :
 
 
              legProb = TLegend(0.1,0.9,0.3,0.8);
-             legProb.AddEntry(graphTargetTot[jet][1], "Target")
+             if (not onData) :
+                legProb.AddEntry(graphTargetTot[jet][1], "Target")
              legProb.AddEntry(graphPredTot[jet][1], "Prediction")
              legProb.SetTextSize(0.03);
              legProb.Draw("SAME")
@@ -1748,7 +2004,7 @@ if output :
 
 
      aconical_sel = False
-     if(not noProb) :
+     if(not noProb and not onData) :
          print("parameter file: start looping")
          pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_events_{ev}.pdf".format(ev=jetNum))
 
@@ -1789,6 +2045,7 @@ if output :
                                      bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
                                      bins_target.append(target_[j_eff][x][y][trk][par]*0.01)
                                      nbin = nbin+1
+                                    #  print(j_eff,x,y,trk,par, validation_par, target_)
                                      if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
                                         n_sig_ok = n_sig_ok+1
              fracsig=n_sig_ok/float(nbin)
