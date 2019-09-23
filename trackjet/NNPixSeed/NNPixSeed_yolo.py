@@ -127,7 +127,7 @@ wH = wHistory()
 standard_mse = False
 noProb = False
 uproot_flag = True      #use small local data
-numPrint = 50#60
+numPrint =20# 20#60
 continue_training = True
 no_pt_eta = False
 ROI_loss = True
@@ -135,6 +135,7 @@ outEvent= 30 #complete plots for this event only
 onData=False
 ptSample = True #sample with 1/pt target #PTLINE
 check_sample = False
+drawOnly = True #draw in output info of input/target without prediction
 
 batch_size = 64#32#64#64#128#32 # Batch size for training. //64 is the good
 print("THE BATCH SIZE IS ",batch_size)
@@ -147,10 +148,10 @@ prob_thr =0.85
 
 jetNum=16460#1000#16460#200000#100000
 jetNum_validation = 3441
-jetDim=30
+jetDim=80
 trackNum =3# 10
 genTrackNum=3
-layNum = 4
+layNum = 7
 if(ptSample) :
      parNum=5
 else :
@@ -1712,7 +1713,7 @@ if predict :
 #------------------------------------------------ PRINT ROOT FILE -----------------------------------#
 
 if output :
-     if predict == False :
+     if predict == False  and (not drawOnly):
 
         print("prediction loading: start")
         loadpred = np.load("NNPixSeed_prediction_event_{ev}.npz".format(ev=jetNum))#106.4
@@ -1727,7 +1728,8 @@ if output :
      if(ROI_loss) :
          if(not onData) :
               target_prob = target_prob[:,:,:,:,:-1]
-         validation_prob = validation_prob[:,:,:,:,:-1]
+         if (not drawOnly): 
+             validation_prob = validation_prob[:,:,:,:,:-1]
 
      from ROOT import *
      from ROOT import gStyle
@@ -1810,12 +1812,13 @@ if output :
              for x in range(jetDim) :
                  for y in range(jetDim) :
                      mapTot[jet][lay].SetBinContent(x+1,y+1,input_[j_eff][x][y][lay])
+                     if(input_[j_eff][x][y][lay]>0) : print("input pixel:", "(x,y)=",x,y, ", layer=",lay, ", value=", input_[j_eff][x][y][lay])
                      for trk in range(trackNum) :
                             #  if(trk>0 and target_prob[j_eff][x][y][trk] == 1) :
                             #     print("Secondary map filled: map, x,y,jet",trk,x,y,jet)
                             #  print("jet,trk,x,y,j_eff",jet,trk,x,y,j_eff)
                         if(not noProb) :
-                             mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
+                             if not drawOnly : mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
                              if(not onData) :
                                  if target_prob[j_eff][x][y][trk] == 1 and lay==1:
                                      xx= float(target_[j_eff][x][y][trk][0])/float(0.01)*0.01#normaliz. factor
@@ -1851,39 +1854,40 @@ if output :
                             #             print("________________________________________")
                             #             print("New not null, bin (x,y):",x,y)
                             #             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
-                             if validation_prob[j_eff][x][y][trk] > (prob_thr-0.1*trk-brokenLay_cut) and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #QUESTA E' la COSA GIUSTA SE NON DEBUGGO
-                             #if target_[j_eff][x][y][trk][4]!=0 and lay==1:
-                            #  if target_prob[j_eff][x][y][trk]!=0 and lay==1:
-                                 xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)*0.01
-                                 yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)*0.01
-                                 graphPredTot[jet][lay].SetPoint(predPoint,x+xx_pr-jetDim/2,y+yy_pr-jetDim/2)
+                             if not drawOnly : 
+                                  if validation_prob[j_eff][x][y][trk] > (prob_thr-0.1*trk-brokenLay_cut) and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #QUESTA E' la COSA GIUSTA SE NON DEBUGGO
+                                 #if target_[j_eff][x][y][trk][4]!=0 and lay==1:
+                                #  if target_prob[j_eff][x][y][trk]!=0 and lay==1:
+                                     xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)*0.01
+                                     yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)*0.01
+                                     graphPredTot[jet][lay].SetPoint(predPoint,x+xx_pr-jetDim/2,y+yy_pr-jetDim/2)
 
-                                 x0,y0 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],0)
-                                 x2,y2 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],2)
-                                 x3,y3 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],3)
-                                 graphPredTot[jet][0].SetPoint(predPoint,x0,y0)
-                                 graphPredTot[jet][2].SetPoint(predPoint,x2,y2)
-                                 graphPredTot[jet][3].SetPoint(predPoint,x3,y3)
+                                     x0,y0 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],0)
+                                     x2,y2 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],2)
+                                     x3,y3 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],3)
+                                     graphPredTot[jet][0].SetPoint(predPoint,x0,y0)
+                                     graphPredTot[jet][2].SetPoint(predPoint,x2,y2)
+                                     graphPredTot[jet][3].SetPoint(predPoint,x3,y3)
 
 
 
-                                 predPoint = predPoint+1
-                                #  latex_pred = TLatex(graphPredTot[jet][lay].GetX()[predPoint-1], graphPredTot[jet][lay].GetY()[predPoint-1],"%.3f, %.3f"%(validation_par[j_eff][x][y][trk][2],validation_par[j_eff][x][y][trk][3]));
-                                #  latex_pred.SetTextSize(0.02)
-                                #  graphPredTot[jet][lay].GetListOfFunctions().Add(latex_pred);
+                                     predPoint = predPoint+1
+                                    #  latex_pred = TLatex(graphPredTot[jet][lay].GetX()[predPoint-1], graphPredTot[jet][lay].GetY()[predPoint-1],"%.3f, %.3f"%(validation_par[j_eff][x][y][trk][2],validation_par[j_eff][x][y][trk][3]));
+                                    #  latex_pred.SetTextSize(0.02)
+                                    #  graphPredTot[jet][lay].GetListOfFunctions().Add(latex_pred);
 
-                                 print("________________________________________")
-                                 print("New Pred, bin (x,y):",x-jetDim/2,y-jetDim/2)
-                                #  print("Flag=",target_[j_eff][x][y][trk][4], "track=", trk)
-                                 if(not onData):
-                                     if(ptSample) : #PTLINE
-                                         print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3]," ",target_[j_eff][x][y][trk][4],"Probabiity target=", target_prob[j_eff][x][y][trk])
-                                         print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3]," ",validation_par[j_eff][x][y][trk][4], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
-                                     else :
-                                         print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3],"Probabiity target=", target_prob[j_eff][x][y][trk])
-                                         print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
+                                     print("________________________________________")
+                                     print("New Pred, bin (x,y):",x-jetDim/2,y-jetDim/2)
+                                    #  print("Flag=",target_[j_eff][x][y][trk][4], "track=", trk)
+                                     if(not onData):
+                                         if(ptSample) : #PTLINE
+                                             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3]," ",target_[j_eff][x][y][trk][4],"Probabiity target=", target_prob[j_eff][x][y][trk])
+                                             print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3]," ",validation_par[j_eff][x][y][trk][4], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
+                                         else :
+                                             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3],"Probabiity target=", target_prob[j_eff][x][y][trk])
+                                             print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
 
-                                 print(" x0,y0=",x0,y0," x2,y2=",x2,y2," x3,y3=",x3,y3,)
+                                     print(" x0,y0=",x0,y0," x2,y2=",x2,y2," x3,y3=",x3,y3,)
                             #  if(target_[j_eff][x][y][trk][0]!=0.0 or target_[j_eff][x][y][trk][1]!=0.0 or target_[j_eff][x][y][trk][2]!=0.0 or target_[j_eff][x][y][trk][3]!=0.0 ) :
                                 #   print("---------------")
                                 #   print("New Not-null-Target, bin (x,y):",x,y)
@@ -2177,18 +2181,19 @@ if output :
                             #  if validation_prob[j_eff][x][y][trk] > prob_thr :# and target_prob[j_eff][x][y][trk] == 1:
                                 # if validation_par[j_eff][x][y][trk][0] != 0 or validation_par[j_eff][x][y][trk][1] != 0  or validation_par[j_eff][x][y][trk][2] != 0 or validation_par[j_eff][x][y][3] != 0 :
                                      if(par!=4) :
-                                         bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
-                                         bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
+                                         if not drawOnly : bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
+                                         if not drawOnly : bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
                                          bins_target.append(target_[j_eff][x][y][trk][par]*0.01)
                                         #  print("valore", (validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
                                      else :
-                                         bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])/target_[j_eff][x][y][trk][par]) #RELATIVE!!!
-                                         bins_pred.append(validation_par[j_eff][x][y][trk][par])
+                                         if not drawOnly : bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])/target_[j_eff][x][y][trk][par]) #RELATIVE!!!
+                                         if not drawOnly :  bins_pred.append(validation_par[j_eff][x][y][trk][par])
                                          bins_target.append(target_[j_eff][x][y][trk][par])
                                      nbin = nbin+1
                                     #  print(j_eff,x,y,trk,par, validation_par, target_)
-                                     if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
-                                        n_sig_ok = n_sig_ok+1
+                                     if not drawOnly : 
+                                          if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
+                                            n_sig_ok = n_sig_ok+1
              if nbin>0 :
                  fracsig=n_sig_ok/float(nbin)
              else :
@@ -2212,10 +2217,10 @@ if output :
                  plt.text(0.0025,915, r'QCD events ($\langle PU \rangle=30$)',size=14)
                  plt.text(0.0025,830,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14)
                  plt.text(0.0025,745,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14)
-                 mean = np.array(bins).mean()
-                 sigma = np.array(bins).std()
+                 if not drawOnly : mean = np.array(bins).mean()
+                 if not drawOnly : sigma = np.array(bins).std()
                 #  plt.text(0.009, 550, "Mean =%f"%(mean), size=14)
-                 plt.text(0.0145, 465, "$\sigma_{res}$ = %.3f"%(sigma), size=14)
+                 if not drawOnly : plt.text(0.0145, 465, "$\sigma_{res}$ = %.3f"%(sigma), size=14)
 
              if(par == 3) :
                  pylab.title('Residual distribution - $\phi$',fontsize=22)
@@ -2309,46 +2314,47 @@ if output :
              pdf_par.savefig()
 
              #scatter plot
-             plt.figure()
-             if(par == 0) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.015, 0.015], [-0.015, 0.015]], cmap=plt.cm.viridis)#, marker='+')
-                 plt.xlabel('x prediction [cm]')
-                 plt.ylabel('x target [cm]')
-                 plt.colorbar()
-             if(par == 1) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.02, 0.02], [-0.02, 0.02]], cmap=plt.cm.viridis)
-                 plt.xlabel('y prediction [cm]')
-                 plt.ylabel('y target [cm]')
-                 plt.colorbar()
-             if(par == 2) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
-                 plt.xlabel('$\eta$ prediction', fontsize=18, labelpad=-5)
-                 plt.ylabel('$\eta$ target', fontsize=18, labelpad=-5)
-                 plt.colorbar()
-                 plt.text(-0.029,0.026, "CMS ", weight='bold', size=17, color="white")
-                 plt.text(-0.029,0.023, "Simulation Preliminary", style='italic', size=14, color="white")
-                 plt.text(0.017,0.026, "13 TeV", size = 17,color="white")
-                 plt.text(-0.005,-0.015, r'QCD events ($\langle PU \rangle=30$)',size=14,color="white")
-                 plt.text(-0.005,-0.02,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14,color="white")
-                 plt.text(-0.005,-0.025,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14,color="white")
+             if(not drawOnly) :
+                 plt.figure()
+                 if(par == 0) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.015, 0.015], [-0.015, 0.015]], cmap=plt.cm.viridis)#, marker='+')
+                     plt.xlabel('x prediction [cm]')
+                     plt.ylabel('x target [cm]')
+                     plt.colorbar()
+                 if(par == 1) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.02, 0.02], [-0.02, 0.02]], cmap=plt.cm.viridis)
+                     plt.xlabel('y prediction [cm]')
+                     plt.ylabel('y target [cm]')
+                     plt.colorbar()
+                 if(par == 2) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
+                     plt.xlabel('$\eta$ prediction', fontsize=18, labelpad=-5)
+                     plt.ylabel('$\eta$ target', fontsize=18, labelpad=-5)
+                     plt.colorbar()
+                     plt.text(-0.029,0.026, "CMS ", weight='bold', size=17, color="white")
+                     plt.text(-0.029,0.023, "Simulation Preliminary", style='italic', size=14, color="white")
+                     plt.text(0.017,0.026, "13 TeV", size = 17,color="white")
+                     plt.text(-0.005,-0.015, r'QCD events ($\langle PU \rangle=30$)',size=14,color="white")
+                     plt.text(-0.005,-0.02,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14,color="white")
+                     plt.text(-0.005,-0.025,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14,color="white")
 
 
 
-             if(par == 3) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
-                 plt.xlabel('$\phi$ prediction')
-                 plt.ylabel('$\phi$ target')
-                 plt.colorbar()
-             if(par == 4) :
-                 plt.hist2d(bins_pred,bins_target,bins=30,range = [[0, 0.15], [0, 0.15]])
-                 plt.xlabel('$p_T$ prediction [1/GeV]')
-                 plt.ylabel('$p_T$ target [1/GeV]')
-                 plt.colorbar()
-             if(RGB) :
-                 pylab.savefig("predVStarget_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
-                 pylab.savefig("predVStarget_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
+                 if(par == 3) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
+                     plt.xlabel('$\phi$ prediction')
+                     plt.ylabel('$\phi$ target')
+                     plt.colorbar()
+                 if(par == 4) :
+                     plt.hist2d(bins_pred,bins_target,bins=30,range = [[0, 0.15], [0, 0.15]])
+                     plt.xlabel('$p_T$ prediction [1/GeV]')
+                     plt.ylabel('$p_T$ target [1/GeV]')
+                     plt.colorbar()
+                 if(RGB) :
+                     pylab.savefig("predVStarget_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
+                     pylab.savefig("predVStarget_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
 
-             pdf_par.savefig()
+                 pdf_par.savefig()
 
              #now the core!
          if(0) : #disabled
@@ -2385,12 +2391,13 @@ if output :
                                      if(aconical) :
                                      #  if validation_prob[j_eff][x][y][trk] > prob_thr :# and target_prob[j_eff][x][y][trk] == 1:
                                     # if validation_par[j_eff][x][y][trk][0] != 0 or validation_par[j_eff][x][y][trk][1] != 0  or validation_par[j_eff][x][y][trk][2] != 0 or validation_par[j_eff][x][y][3] != 0 :
-                                         bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
-                                         bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
+                                         if not drawOnly : bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
+                                         if not drawOnly : bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
                                          bins_target.append(target_[j_eff][x][y][trk][par]*0.01)
                                          nbin = nbin+1
-                                         if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
-                                            n_sig_ok = n_sig_ok+1
+                                         if not drawOnly : 
+                                              if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
+                                                n_sig_ok = n_sig_ok+1
                  if nbin>0 :
                      fracsig=n_sig_ok/float(nbin)
                  else :
