@@ -148,7 +148,7 @@ prob_thr =0.85
 
 jetNum=16460#1000#16460#200000#100000
 jetNum_validation = 3441
-jetDim=80
+jetDim=30
 trackNum =3# 10
 genTrackNum=3
 layNum = 7
@@ -1354,16 +1354,24 @@ combined_training = False
 # files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0004/ntuple*.root')
 # files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0005/ntuple*.root')
 
+#come sotto ma: 200k train, 50k valdiaiton
+# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train_1lay/ntuple_simHit_*.root')
+# files_validation=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_validation_1lay/ntuple_simHit_*.root')
+
 #SIM HIT full info, 4hit (actually dthr=2), multiplied, 30x30, pt info, 1 lay
+#FOLLOWING TWO LINES ARE THE USED ONE
 files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
 files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
+#####(in the same block of the good, but i don't know)
 # files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple_simHit_1LayClustPt_cutPt_9*.root')
 # files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple_simHit_1LayClustPt_cutPt_9*.root')
 
+#Endcap, pt cut 500GeV, 30x30
+# files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/nuple_ntuple_EC_centralEgun_pt500cut_9*.root')
+# files_validation = glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/nuple_ntuple_EC_centralEgun_pt500cut_81*.root')
 
-#come sopra ma: 200k train, 50k valdiaiton
-# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train_1lay/ntuple_simHit_*.root')
-# files_validation=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_validation_1lay/ntuple_simHit_*.root')
+
+
 
 
 
@@ -1728,7 +1736,7 @@ if output :
      if(ROI_loss) :
          if(not onData) :
               target_prob = target_prob[:,:,:,:,:-1]
-         if (not drawOnly): 
+         if (not drawOnly):
              validation_prob = validation_prob[:,:,:,:,:-1]
 
      from ROOT import *
@@ -1854,7 +1862,7 @@ if output :
                             #             print("________________________________________")
                             #             print("New not null, bin (x,y):",x,y)
                             #             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
-                             if not drawOnly : 
+                             if not drawOnly :
                                   if validation_prob[j_eff][x][y][trk] > (prob_thr-0.1*trk-brokenLay_cut) and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #QUESTA E' la COSA GIUSTA SE NON DEBUGGO
                                  #if target_[j_eff][x][y][trk][4]!=0 and lay==1:
                                 #  if target_prob[j_eff][x][y][trk]!=0 and lay==1:
@@ -2191,7 +2199,7 @@ if output :
                                          bins_target.append(target_[j_eff][x][y][trk][par])
                                      nbin = nbin+1
                                     #  print(j_eff,x,y,trk,par, validation_par, target_)
-                                     if not drawOnly : 
+                                     if not drawOnly :
                                           if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
                                             n_sig_ok = n_sig_ok+1
              if nbin>0 :
@@ -2395,7 +2403,7 @@ if output :
                                          if not drawOnly : bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
                                          bins_target.append(target_[j_eff][x][y][trk][par]*0.01)
                                          nbin = nbin+1
-                                         if not drawOnly : 
+                                         if not drawOnly :
                                               if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
                                                 n_sig_ok = n_sig_ok+1
                  if nbin>0 :
