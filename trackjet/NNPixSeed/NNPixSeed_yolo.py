@@ -40,7 +40,13 @@ from numpy import concatenate as concatenatenp
 
 #######################################
 #
-# USAGE: python yoloJet.py --seed SEED --convert --input INPUT --training --predict --output
+# USAGE
+# python yoloJet.py --input INPUT --training --predict --output
+# * option --seed and --convert are deprecated
+# * option --input: for prediction and output. IF uproot_flag=True--> also for training
+# * option --training: better on GPU. the train/validation sample is harcoded.  IF continue_training, star_epoch must specified
+# * option --predict: ok both on GPU and CPU. if without --training the weights must be specified (hardcoded)
+# * option --output: root and pdf file. if drawonly=True-->no prediction (to draw without train/predict)
 #
 ######################################
 
@@ -126,7 +132,7 @@ wH = wHistory()
 ########################internal parameters########################
 standard_mse = False
 noProb = False
-uproot_flag = True      #use small local data
+uproot_flag = False      #use small local data
 numPrint =20# 20#60
 continue_training = True
 no_pt_eta = False
@@ -135,12 +141,13 @@ outEvent= 30 #complete plots for this event only
 onData=False
 ptSample = True #sample with 1/pt target #PTLINE
 check_sample = False
-drawOnly = True #draw in output info of input/target without prediction
+drawOnly = False #draw in output info of input/target without prediction
 
 batch_size = 64#32#64#64#128#32 # Batch size for training. //64 is the good
 print("THE BATCH SIZE IS ",batch_size)
-epochs = 54 # Number of epochs to train for.
-start_epoch = 253 #260 sono senza dropout #260-285 con dropout
+epochs = 100#54 # Number of epochs to train for.
+# start_epoch = 253 #260 sono senza dropout #260-285 con dropout BARREL
+start_epoch = 50 #260 sono senza dropout #260-285 con dropout
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 valSplit=0.2
@@ -590,7 +597,7 @@ if convert==False and gpu==True:
 
     print("uproot flag=",uproot_flag)
     if(uproot_flag) :
-
+        print("WARNING: using local data (also for training!)")
         print("loading data: start")
 
         import uproot
@@ -1360,15 +1367,18 @@ combined_training = False
 
 #SIM HIT full info, 4hit (actually dthr=2), multiplied, 30x30, pt info, 1 lay
 #FOLLOWING TWO LINES ARE THE USED ONE
-files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
-files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
+# files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
+# files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
 #####(in the same block of the good, but i don't know)
 # files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple_simHit_1LayClustPt_cutPt_9*.root')
 # files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple_simHit_1LayClustPt_cutPt_9*.root')
 
 #Endcap, pt cut 500GeV, 30x30
-# files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/nuple_ntuple_EC_centralEgun_pt500cut_9*.root')
-# files_validation = glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/nuple_ntuple_EC_centralEgun_pt500cut_81*.root')
+files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/ntuple_EC_centralEgun_pt500cut_*.root')
+files_validation = glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0001/ntuple_EC_centralEgun_pt500cut_1*.root')
+
+#FULLSTAT: files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/nuple_ntuple_EC_centralEgun_pt500cut_*.root')+ glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0002/nuple_ntuple_EC_centralEgun_pt500cut_*.root')+ glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0003/nuple_ntuple_EC_centralEgun_pt500cut_*.root')+ glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0004/nuple_ntuple_EC_centralEgun_pt500cut_*.root')
+#FULLSTAT: files_validation = glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0001/nuple_ntuple_EC_centralEgun_pt500cut_*.root')
 
 
 
@@ -1523,8 +1533,12 @@ if train :
         # model.load_weights('weights.233-0.87.hdf5')#part14 (ROIsoft & verylowLRx10 & fullstat)
         # model.load_weights('weights.239-0.87.hdf5')#part15 (ROIsoft & verylowLR & fullstat with stepNum=stepNum/20)
         # model.load_weights('weights.246-0.87.hdf5')#part16_bis   (ROIsoft & 0.1verylowLR & fullstat with stepNum=stepNum/20, bat64)                                       ((ROIsoft & 0.0001LR & fullstat with stepNum=stepNum/20) ABORTED!!)
-        model.load_weights('weights.252-0.87.hdf5')#part17 (come sopra)
-
+        # model.load_weights('weights.252-0.87.hdf5')#part17 (come sopra)# LAST GOOD ONE 
+        
+        #EC test nightly training
+        # model.load_weights('weights.54-26.91.hdf5')
+        model.load_weights('weights.50-2.51.hdf5')
+        
         if(not noProb) :
             if(uproot_flag) :
                 history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs+start_epoch, verbose = 2, validation_split=valSplit,  initial_epoch=start_epoch, callbacks=[checkpointer])#class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
@@ -1671,10 +1685,16 @@ if predict :
 
         # model.load_weights('weights.233-0.87.hdf5')
         # model.load_weights('weights.239-0.87.hdf5')
-        model.load_weights('weights.246-0.87.hdf5')
         # model.load_weights('weights.21-2.13.hdf5')
 
         # model.load_weights('NNPixSeed_train_event_1106439_17.h5')#poster one
+        
+        #model.load_weights('weights.246-0.87.hdf5') #FINAL BARREL GOOD ONE 
+
+        #ECtraining from here -----------------------
+        # model.load_weights('NNPixSeed_train_event_16793.6_ep453_simHitOnly.h5') #local file with 254 epochs
+        model.load_weights('NNPixSeed_train_event_20820737_ep50_simHitOnly.h5') #50 epochs, medium sample
+        
 
     if(not noProb) :
         [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
