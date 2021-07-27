@@ -51,7 +51,8 @@ pylab.title('model loss', fontsize=24)
 pylab.ylabel('loss', fontsize=22)
 pylab.xlabel('epoch', fontsize=22)
 # pylab.ylim(0.61,0.75)#1.9)
-pylab.ylim(0.82,1.1)#1.1
+# pylab.ylim(0.82,1.1)#1.1 barrel version
+pylab.ylim(2.4,3)#1.1
 plt.grid(True)
 pylab.legend(['test', 'train'], loc='upper right')
 # plot = fig_tot.add_subplot(1, 1, 1)

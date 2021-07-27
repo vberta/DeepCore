@@ -1,10 +1,35 @@
 import math
-from ROOT import *
-gROOT.SetBatch(True)
+# from ROOT import *
+import ROOT
+from ROOT import gStyle
+ROOT.gROOT.Reset()
+ROOT.gROOT.SetBatch(True)
 import numpy as np
+import os
+import argparse
+import array as arr
+gStyle.SetOptStat(0)
 
-# fileList = ['1060','1060_noCR']
-fileList = ['1060','1060_noCR','1060_CRfix']
+parser = argparse.ArgumentParser("plotter")
+parser.add_argument('-i1',      '--input1',       type=str,                                           action='store', help='input file 1. No default provided')
+parser.add_argument('-i2',   '--input2',    type=str,                                           action='store', help='input file 2. No default provided')
+parser.add_argument('-i3',    '--input3',     type=str,                                           action='store', help='input file 3. No default provided')
+parser.add_argument('-n1',      '--name1',       type=str,     default='deepcore',                     action='store', help='input file 1. No default provided')
+parser.add_argument('-n2',   '--name2',    type=str,     default='standard',             action='store', help='input file 2. No default provided')
+parser.add_argument('-n3',    '--name3',     type=str,     default='old deepcore',             action='store', help='input file 3. No default provided')
+
+args = parser.parse_args()
+input1   = args.input1
+input2  = args.input2
+input3   = args.input3
+name1 = args.name1
+name2 = args.name2
+name3 = args.name3
+
+
+
+# fileList = ['in1','in2']
+fileList = ['in1','in2','in3']
 parPull = ['Dxy','Dz','Phi','Pt','Theta'] #pull
 parPullvsEta = ['h_dxy','h_dz','h_phi','h_pt','h_theta'] #pull vs eta
 parPullvsPt = ['dxy','dz','phi','pt','theta'] #pull vs pt 
@@ -23,27 +48,28 @@ kindDict = {
 pathDict = {
     # 'generalTracks' : "DQMData/Run 1/Tracking/Run summary/Track/general_MTVAssociationByChi2/",
     # 'jetCoreTracks' :"DQMData/Run 1/Tracking/Run summary/Track/cutsRecoJetCoreRegionalStepByOriginalAlgo_MTVAssociationByChi2/"
-    'generalTracks' : "DQMData/Run 1/Tracking/Run summary/Track/general_trackingParticleRecoAsssociation/",
-    'jetCoreTracks' :"DQMData/Run 1/Tracking/Run summary/Track/cutsRecoJetCoreRegionalStepByOriginalAlgo_trackingParticleRecoAsssociation/"
+    'generalTracks' : "DQMData/Run 1/Tracking/Run summary/JetCore/general_trackAssociatorByChi2/",
+    'jetCoreTracks' :"DQMData/Run 1/Tracking/Run summary/JetCore/cutsRecoJetCoreRegionalStep_trackAssociatorByChi2/"
 }
 
+
+
 colorDict = {}
-colorDict['1060_noCR'] = 632+2 #red
-colorDict['1060'] = 600+2 #blue
-colorDict['1060_CRfix'] = kGreen+2 #green
+colorDict['in2'] = ROOT.kRed+2 #red
+colorDict['in1'] = ROOT.kBlue+2 #blue
+colorDict['in3'] = ROOT.kGreen+2 #green
+
 
 fileDict = {}
-# fileDict['1060'] = TFile.Open("/scratchssd/bertacch/tracking/step34_20k/DEBUG_10to11/standard_chi2_1060_GT2018_extraplots/DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root")
-# fileDict['1060_noCR'] = TFile.Open("/scratchssd/bertacch/tracking/step34_20k/DEBUG_10to11/standard_chi2_1060_GT2018_noCR_extraplots/DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root")
-# fileDict['1060_CRfix'] = TFile.Open("/scratchssd/bertacch/tracking/step34_20k/DEBUG_10to11/standard_chi2_1060_GT2018_CRfix_extraplots/DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root")
-fileDict['1060'] = TFile.Open("/scratchssd/bertacch/tracking/step34_20k/DEBUG_10to11/standard_hits_1120pre6/DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root")
-fileDict['1060_noCR'] = TFile.Open("/scratchssd/bertacch/tracking/step34_20k/DEBUG_10to11/standard_hits_1120pre6_noCR/DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root")
-fileDict['1060_CRfix'] = TFile.Open("/scratchssd/bertacch/tracking/step34_20k/DEBUG_10to11/standard_hits_1120pre6_bugfix_v2/DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root")
+fileDict['in1'] = ROOT.TFile.Open(input1)
+fileDict['in2'] = ROOT.TFile.Open(input2)
+fileDict['in3'] = ROOT.TFile.Open(input3)
+
 
 legLabel = {
-   '1060_noCR'  : '11_2_0 noCR' ,
-   '1060_CRfix' : '11_2_0 CR_fixed' ,
-   '1060'       : '11_2_0 CR' 
+   'in1'  : name1,
+   'in2'  : name2,
+   'in3'  : name3,
 }
 
 
@@ -62,7 +88,8 @@ def findmin(histo1,histo2) :
         return val1
     else : 
         return val2
-        
+
+
 histoDict = {}
 for pind,path in pathDict.iteritems() :
     for f in fileList :
@@ -101,14 +128,13 @@ for pind,path in pathDict.iteritems() :
                     #             tempSlice = temph2.ProjectionY(pind+'_'+plot+'_'+par+'_'+f+'_slice'+str(xx),xx,xx)
                     #             histoDict[pind+plot+par+f].SetBinContent(xx,tempSlice.GetStdDev())
                     #             histoDict[pind+plot+par+f].SetBinError(xx,tempSlice.GetStdDevError())
-                        
                     histoDict[pind+plot+par+f].SetName(pind+'_'+plot+'_'+par+'_'+f)
                     histoDict[pind+plot+par+f].SetTitle(pind+' '+par+' '+plot)
                     histoDict[pind+plot+par+f].SetLineWidth(3)
                     histoDict[pind+plot+par+f].SetLineColor(colorDict[f])
                     histoDict[pind+plot+par+f].SetStats(0)
 
-output= TFile("comparison_CRbug_OzFixRel1120_fix.root","recreate")
+output= ROOT.TFile("residual_comparison.root","recreate")
 
 #canvas
 canvasDict = {}
@@ -118,8 +144,8 @@ for pind,path in pathDict.iteritems() :
             for par in kval[0] :
                 for plot in kval[1] :
                     if par=='eta' and '_vs_pt' in plot : continue
-                    canvasDict['leg'+pind+plot+par] = TLegend(0.7,0.8,0.95,0.95) 
-                    canvasDict[pind+plot+par] = TCanvas('c_CRcomp_'+pind+'_'+plot+'_'+par,'c_CRcomp_'+pind+'_'+plot+'_'+par,800,600)
+                    canvasDict['leg'+pind+plot+par] = ROOT.TLegend(0.7,0.8,0.95,0.95) 
+                    canvasDict[pind+plot+par] = ROOT.TCanvas('c_CRcomp_'+pind+'_'+plot+'_'+par,'c_CRcomp_'+pind+'_'+plot+'_'+par,800,600)
                     canvasDict[pind+plot+par].cd()
                     canvasDict[pind+plot+par].SetGridx()
                     canvasDict[pind+plot+par].SetGridy()
@@ -153,7 +179,7 @@ for pind,path in pathDict.iteritems() :
                 for plot in kval[1] :
                     # if par=='eta' and '_vs_pt' in plot : continue
                     canvasDict[pind+plot+par].Write()
-                    canvasDict[pind+plot+par].SaveAs("plot_fix/"+pind+'_'+plot+'_'+par+".pdf")
-                    canvasDict[pind+plot+par].SaveAs("plot_fix/"+pind+'_'+plot+'_'+par+".png")
+                    canvasDict[pind+plot+par].SaveAs("./"+pind+'_'+plot+'_'+par+".pdf")
+                    canvasDict[pind+plot+par].SaveAs("./"+pind+'_'+plot+'_'+par+".png")
 
 
