@@ -40,7 +40,13 @@ from numpy import concatenate as concatenatenp
 
 #######################################
 #
-# USAGE: python yoloJet.py --seed SEED --convert --input INPUT --training --predict --output
+# USAGE
+# python yoloJet.py --input INPUT --training --predict --output
+# * option --seed and --convert are deprecated
+# * option --input: for prediction and output. IF uproot_flag=True--> also for training
+# * option --training: better on GPU. the train/validation sample is harcoded.  IF continue_training, star_epoch must specified
+# * option --predict: ok both on GPU and CPU. if without --training the weights must be specified (hardcoded)
+# * option --output: root and pdf file. if drawonly=True-->no prediction (to draw without train/predict)
 #
 ######################################
 
@@ -126,8 +132,8 @@ wH = wHistory()
 ########################internal parameters########################
 standard_mse = False
 noProb = False
-uproot_flag = True      #use small local data
-numPrint = 50#60
+uproot_flag = False      #use small local data
+numPrint =20# 20#60
 continue_training = True
 no_pt_eta = False
 ROI_loss = True
@@ -135,11 +141,13 @@ outEvent= 30 #complete plots for this event only
 onData=False
 ptSample = True #sample with 1/pt target #PTLINE
 check_sample = False
+drawOnly = False #draw in output info of input/target without prediction
 
 batch_size = 64#32#64#64#128#32 # Batch size for training. //64 is the good
 print("THE BATCH SIZE IS ",batch_size)
-epochs = 54 # Number of epochs to train for.
-start_epoch = 253 #260 sono senza dropout #260-285 con dropout
+epochs = 100#54 # Number of epochs to train for.
+# start_epoch = 253 #260 sono senza dropout #260-285 con dropout BARREL
+start_epoch = 50 #260 sono senza dropout #260-285 con dropout
 latent_dim = 70 # Latent dimensionality of the encoding space.
 
 valSplit=0.2
@@ -150,7 +158,7 @@ jetNum_validation = 3441
 jetDim=30
 trackNum =3# 10
 genTrackNum=3
-layNum = 4
+layNum = 7
 if(ptSample) :
      parNum=5
 else :
@@ -589,7 +597,7 @@ if convert==False and gpu==True:
 
     print("uproot flag=",uproot_flag)
     if(uproot_flag) :
-
+        print("WARNING: using local data (also for training!)")
         print("loading data: start")
 
         import uproot
@@ -1353,16 +1361,27 @@ combined_training = False
 # files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0004/ntuple*.root')
 # files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_4LayClustPt_4M_reorder/181218_200300/0005/ntuple*.root')
 
+#come sotto ma: 200k train, 50k valdiaiton
+# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train_1lay/ntuple_simHit_*.root')
+# files_validation=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_validation_1lay/ntuple_simHit_*.root')
+
 #SIM HIT full info, 4hit (actually dthr=2), multiplied, 30x30, pt info, 1 lay
-files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
-files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
+#FOLLOWING TWO LINES ARE THE USED ONE
+# files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
+# files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
+#####(in the same block of the good, but i don't know)
 # files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple_simHit_1LayClustPt_cutPt_9*.root')
 # files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple_simHit_1LayClustPt_cutPt_9*.root')
 
+#Endcap, pt cut 500GeV, 30x30
+files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/ntuple_EC_centralEgun_pt500cut_*.root')
+files_validation = glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0001/ntuple_EC_centralEgun_pt500cut_1*.root')
 
-#come sopra ma: 200k train, 50k valdiaiton
-# files=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_train_1lay/ntuple_simHit_*.root')
-# files_validation=glob.glob('/gpfs/ddn/users/bertacch/cms/cms_mywork/trackjet/NNClustSeedSimHit/data_validation_1lay/ntuple_simHit_*.root')
+#FULLSTAT: files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0000/nuple_ntuple_EC_centralEgun_pt500cut_*.root')+ glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0002/nuple_ntuple_EC_centralEgun_pt500cut_*.root')+ glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0003/nuple_ntuple_EC_centralEgun_pt500cut_*.root')+ glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0004/nuple_ntuple_EC_centralEgun_pt500cut_*.root')
+#FULLSTAT: files_validation = glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/UBGGun_E-1000to7000_Eta-1p2to2p1_13TeV_pythia8/NNClustSeedInputSimHit_EC_centralEgun_pt500cut/200603_153129/0001/nuple_ntuple_EC_centralEgun_pt500cut_*.root')
+
+
+
 
 
 
@@ -1514,8 +1533,12 @@ if train :
         # model.load_weights('weights.233-0.87.hdf5')#part14 (ROIsoft & verylowLRx10 & fullstat)
         # model.load_weights('weights.239-0.87.hdf5')#part15 (ROIsoft & verylowLR & fullstat with stepNum=stepNum/20)
         # model.load_weights('weights.246-0.87.hdf5')#part16_bis   (ROIsoft & 0.1verylowLR & fullstat with stepNum=stepNum/20, bat64)                                       ((ROIsoft & 0.0001LR & fullstat with stepNum=stepNum/20) ABORTED!!)
-        model.load_weights('weights.252-0.87.hdf5')#part17 (come sopra)
-
+        # model.load_weights('weights.252-0.87.hdf5')#part17 (come sopra)# LAST GOOD ONE 
+        
+        #EC test nightly training
+        # model.load_weights('weights.54-26.91.hdf5')
+        model.load_weights('weights.50-2.51.hdf5')
+        
         if(not noProb) :
             if(uproot_flag) :
                 history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs+start_epoch, verbose = 2, validation_split=valSplit,  initial_epoch=start_epoch, callbacks=[checkpointer])#class_weight={'reshape_2':{},'reshape_3':{0:1,1:2000}})  #, callbacks=[validationCall()])
@@ -1662,10 +1685,16 @@ if predict :
 
         # model.load_weights('weights.233-0.87.hdf5')
         # model.load_weights('weights.239-0.87.hdf5')
-        model.load_weights('weights.246-0.87.hdf5')
         # model.load_weights('weights.21-2.13.hdf5')
 
         # model.load_weights('NNPixSeed_train_event_1106439_17.h5')#poster one
+        
+        #model.load_weights('weights.246-0.87.hdf5') #FINAL BARREL GOOD ONE 
+
+        #ECtraining from here -----------------------
+        # model.load_weights('NNPixSeed_train_event_16793.6_ep453_simHitOnly.h5') #local file with 254 epochs
+        model.load_weights('NNPixSeed_train_event_20820737_ep50_simHitOnly.h5') #50 epochs, medium sample
+        
 
     if(not noProb) :
         [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
@@ -1712,7 +1741,7 @@ if predict :
 #------------------------------------------------ PRINT ROOT FILE -----------------------------------#
 
 if output :
-     if predict == False :
+     if predict == False  and (not drawOnly):
 
         print("prediction loading: start")
         loadpred = np.load("NNPixSeed_prediction_event_{ev}.npz".format(ev=jetNum))#106.4
@@ -1727,7 +1756,8 @@ if output :
      if(ROI_loss) :
          if(not onData) :
               target_prob = target_prob[:,:,:,:,:-1]
-         validation_prob = validation_prob[:,:,:,:,:-1]
+         if (not drawOnly):
+             validation_prob = validation_prob[:,:,:,:,:-1]
 
      from ROOT import *
      from ROOT import gStyle
@@ -1810,12 +1840,13 @@ if output :
              for x in range(jetDim) :
                  for y in range(jetDim) :
                      mapTot[jet][lay].SetBinContent(x+1,y+1,input_[j_eff][x][y][lay])
+                     if(input_[j_eff][x][y][lay]>0) : print("input pixel:", "(x,y)=",x,y, ", layer=",lay, ", value=", input_[j_eff][x][y][lay])
                      for trk in range(trackNum) :
                             #  if(trk>0 and target_prob[j_eff][x][y][trk] == 1) :
                             #     print("Secondary map filled: map, x,y,jet",trk,x,y,jet)
                             #  print("jet,trk,x,y,j_eff",jet,trk,x,y,j_eff)
                         if(not noProb) :
-                             mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
+                             if not drawOnly : mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
                              if(not onData) :
                                  if target_prob[j_eff][x][y][trk] == 1 and lay==1:
                                      xx= float(target_[j_eff][x][y][trk][0])/float(0.01)*0.01#normaliz. factor
@@ -1851,39 +1882,40 @@ if output :
                             #             print("________________________________________")
                             #             print("New not null, bin (x,y):",x,y)
                             #             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3], "Probabiity target=", target_prob[j_eff][x][y][trk])
-                             if validation_prob[j_eff][x][y][trk] > (prob_thr-0.1*trk-brokenLay_cut) and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #QUESTA E' la COSA GIUSTA SE NON DEBUGGO
-                             #if target_[j_eff][x][y][trk][4]!=0 and lay==1:
-                            #  if target_prob[j_eff][x][y][trk]!=0 and lay==1:
-                                 xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)*0.01
-                                 yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)*0.01
-                                 graphPredTot[jet][lay].SetPoint(predPoint,x+xx_pr-jetDim/2,y+yy_pr-jetDim/2)
+                             if not drawOnly :
+                                  if validation_prob[j_eff][x][y][trk] > (prob_thr-0.1*trk-brokenLay_cut) and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #QUESTA E' la COSA GIUSTA SE NON DEBUGGO
+                                 #if target_[j_eff][x][y][trk][4]!=0 and lay==1:
+                                #  if target_prob[j_eff][x][y][trk]!=0 and lay==1:
+                                     xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)*0.01
+                                     yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)*0.01
+                                     graphPredTot[jet][lay].SetPoint(predPoint,x+xx_pr-jetDim/2,y+yy_pr-jetDim/2)
 
-                                 x0,y0 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],0)
-                                 x2,y2 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],2)
-                                 x3,y3 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],3)
-                                 graphPredTot[jet][0].SetPoint(predPoint,x0,y0)
-                                 graphPredTot[jet][2].SetPoint(predPoint,x2,y2)
-                                 graphPredTot[jet][3].SetPoint(predPoint,x3,y3)
+                                     x0,y0 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],0)
+                                     x2,y2 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],2)
+                                     x3,y3 = prop_on_layer(x+xx_pr-jetDim/2, y+yy_pr-jetDim/2,validation_par[j_eff][x][y][trk][2]*0.01,validation_par[j_eff][x][y][trk][3]*0.01,input_jeta[j_eff],3)
+                                     graphPredTot[jet][0].SetPoint(predPoint,x0,y0)
+                                     graphPredTot[jet][2].SetPoint(predPoint,x2,y2)
+                                     graphPredTot[jet][3].SetPoint(predPoint,x3,y3)
 
 
 
-                                 predPoint = predPoint+1
-                                #  latex_pred = TLatex(graphPredTot[jet][lay].GetX()[predPoint-1], graphPredTot[jet][lay].GetY()[predPoint-1],"%.3f, %.3f"%(validation_par[j_eff][x][y][trk][2],validation_par[j_eff][x][y][trk][3]));
-                                #  latex_pred.SetTextSize(0.02)
-                                #  graphPredTot[jet][lay].GetListOfFunctions().Add(latex_pred);
+                                     predPoint = predPoint+1
+                                    #  latex_pred = TLatex(graphPredTot[jet][lay].GetX()[predPoint-1], graphPredTot[jet][lay].GetY()[predPoint-1],"%.3f, %.3f"%(validation_par[j_eff][x][y][trk][2],validation_par[j_eff][x][y][trk][3]));
+                                    #  latex_pred.SetTextSize(0.02)
+                                    #  graphPredTot[jet][lay].GetListOfFunctions().Add(latex_pred);
 
-                                 print("________________________________________")
-                                 print("New Pred, bin (x,y):",x-jetDim/2,y-jetDim/2)
-                                #  print("Flag=",target_[j_eff][x][y][trk][4], "track=", trk)
-                                 if(not onData):
-                                     if(ptSample) : #PTLINE
-                                         print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3]," ",target_[j_eff][x][y][trk][4],"Probabiity target=", target_prob[j_eff][x][y][trk])
-                                         print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3]," ",validation_par[j_eff][x][y][trk][4], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
-                                     else :
-                                         print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3],"Probabiity target=", target_prob[j_eff][x][y][trk])
-                                         print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
+                                     print("________________________________________")
+                                     print("New Pred, bin (x,y):",x-jetDim/2,y-jetDim/2)
+                                    #  print("Flag=",target_[j_eff][x][y][trk][4], "track=", trk)
+                                     if(not onData):
+                                         if(ptSample) : #PTLINE
+                                             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3]," ",target_[j_eff][x][y][trk][4],"Probabiity target=", target_prob[j_eff][x][y][trk])
+                                             print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3]," ",validation_par[j_eff][x][y][trk][4], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
+                                         else :
+                                             print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3],"Probabiity target=", target_prob[j_eff][x][y][trk])
+                                             print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
 
-                                 print(" x0,y0=",x0,y0," x2,y2=",x2,y2," x3,y3=",x3,y3,)
+                                     print(" x0,y0=",x0,y0," x2,y2=",x2,y2," x3,y3=",x3,y3,)
                             #  if(target_[j_eff][x][y][trk][0]!=0.0 or target_[j_eff][x][y][trk][1]!=0.0 or target_[j_eff][x][y][trk][2]!=0.0 or target_[j_eff][x][y][trk][3]!=0.0 ) :
                                 #   print("---------------")
                                 #   print("New Not-null-Target, bin (x,y):",x,y)
@@ -2177,18 +2209,19 @@ if output :
                             #  if validation_prob[j_eff][x][y][trk] > prob_thr :# and target_prob[j_eff][x][y][trk] == 1:
                                 # if validation_par[j_eff][x][y][trk][0] != 0 or validation_par[j_eff][x][y][trk][1] != 0  or validation_par[j_eff][x][y][trk][2] != 0 or validation_par[j_eff][x][y][3] != 0 :
                                      if(par!=4) :
-                                         bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
-                                         bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
+                                         if not drawOnly : bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
+                                         if not drawOnly : bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
                                          bins_target.append(target_[j_eff][x][y][trk][par]*0.01)
                                         #  print("valore", (validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
                                      else :
-                                         bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])/target_[j_eff][x][y][trk][par]) #RELATIVE!!!
-                                         bins_pred.append(validation_par[j_eff][x][y][trk][par])
+                                         if not drawOnly : bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])/target_[j_eff][x][y][trk][par]) #RELATIVE!!!
+                                         if not drawOnly :  bins_pred.append(validation_par[j_eff][x][y][trk][par])
                                          bins_target.append(target_[j_eff][x][y][trk][par])
                                      nbin = nbin+1
                                     #  print(j_eff,x,y,trk,par, validation_par, target_)
-                                     if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
-                                        n_sig_ok = n_sig_ok+1
+                                     if not drawOnly :
+                                          if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
+                                            n_sig_ok = n_sig_ok+1
              if nbin>0 :
                  fracsig=n_sig_ok/float(nbin)
              else :
@@ -2212,10 +2245,10 @@ if output :
                  plt.text(0.0025,915, r'QCD events ($\langle PU \rangle=30$)',size=14)
                  plt.text(0.0025,830,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14)
                  plt.text(0.0025,745,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14)
-                 mean = np.array(bins).mean()
-                 sigma = np.array(bins).std()
+                 if not drawOnly : mean = np.array(bins).mean()
+                 if not drawOnly : sigma = np.array(bins).std()
                 #  plt.text(0.009, 550, "Mean =%f"%(mean), size=14)
-                 plt.text(0.0145, 465, "$\sigma_{res}$ = %.3f"%(sigma), size=14)
+                 if not drawOnly : plt.text(0.0145, 465, "$\sigma_{res}$ = %.3f"%(sigma), size=14)
 
              if(par == 3) :
                  pylab.title('Residual distribution - $\phi$',fontsize=22)
@@ -2309,46 +2342,47 @@ if output :
              pdf_par.savefig()
 
              #scatter plot
-             plt.figure()
-             if(par == 0) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.015, 0.015], [-0.015, 0.015]], cmap=plt.cm.viridis)#, marker='+')
-                 plt.xlabel('x prediction [cm]')
-                 plt.ylabel('x target [cm]')
-                 plt.colorbar()
-             if(par == 1) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.02, 0.02], [-0.02, 0.02]], cmap=plt.cm.viridis)
-                 plt.xlabel('y prediction [cm]')
-                 plt.ylabel('y target [cm]')
-                 plt.colorbar()
-             if(par == 2) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
-                 plt.xlabel('$\eta$ prediction', fontsize=18, labelpad=-5)
-                 plt.ylabel('$\eta$ target', fontsize=18, labelpad=-5)
-                 plt.colorbar()
-                 plt.text(-0.029,0.026, "CMS ", weight='bold', size=17, color="white")
-                 plt.text(-0.029,0.023, "Simulation Preliminary", style='italic', size=14, color="white")
-                 plt.text(0.017,0.026, "13 TeV", size = 17,color="white")
-                 plt.text(-0.005,-0.015, r'QCD events ($\langle PU \rangle=30$)',size=14,color="white")
-                 plt.text(-0.005,-0.02,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14,color="white")
-                 plt.text(-0.005,-0.025,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14,color="white")
+             if(not drawOnly) :
+                 plt.figure()
+                 if(par == 0) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.015, 0.015], [-0.015, 0.015]], cmap=plt.cm.viridis)#, marker='+')
+                     plt.xlabel('x prediction [cm]')
+                     plt.ylabel('x target [cm]')
+                     plt.colorbar()
+                 if(par == 1) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.02, 0.02], [-0.02, 0.02]], cmap=plt.cm.viridis)
+                     plt.xlabel('y prediction [cm]')
+                     plt.ylabel('y target [cm]')
+                     plt.colorbar()
+                 if(par == 2) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
+                     plt.xlabel('$\eta$ prediction', fontsize=18, labelpad=-5)
+                     plt.ylabel('$\eta$ target', fontsize=18, labelpad=-5)
+                     plt.colorbar()
+                     plt.text(-0.029,0.026, "CMS ", weight='bold', size=17, color="white")
+                     plt.text(-0.029,0.023, "Simulation Preliminary", style='italic', size=14, color="white")
+                     plt.text(0.017,0.026, "13 TeV", size = 17,color="white")
+                     plt.text(-0.005,-0.015, r'QCD events ($\langle PU \rangle=30$)',size=14,color="white")
+                     plt.text(-0.005,-0.02,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14,color="white")
+                     plt.text(-0.005,-0.025,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14,color="white")
 
 
 
-             if(par == 3) :
-                 plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
-                 plt.xlabel('$\phi$ prediction')
-                 plt.ylabel('$\phi$ target')
-                 plt.colorbar()
-             if(par == 4) :
-                 plt.hist2d(bins_pred,bins_target,bins=30,range = [[0, 0.15], [0, 0.15]])
-                 plt.xlabel('$p_T$ prediction [1/GeV]')
-                 plt.ylabel('$p_T$ target [1/GeV]')
-                 plt.colorbar()
-             if(RGB) :
-                 pylab.savefig("predVStarget_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
-                 pylab.savefig("predVStarget_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
+                 if(par == 3) :
+                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
+                     plt.xlabel('$\phi$ prediction')
+                     plt.ylabel('$\phi$ target')
+                     plt.colorbar()
+                 if(par == 4) :
+                     plt.hist2d(bins_pred,bins_target,bins=30,range = [[0, 0.15], [0, 0.15]])
+                     plt.xlabel('$p_T$ prediction [1/GeV]')
+                     plt.ylabel('$p_T$ target [1/GeV]')
+                     plt.colorbar()
+                 if(RGB) :
+                     pylab.savefig("predVStarget_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
+                     pylab.savefig("predVStarget_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
 
-             pdf_par.savefig()
+                 pdf_par.savefig()
 
              #now the core!
          if(0) : #disabled
@@ -2385,12 +2419,13 @@ if output :
                                      if(aconical) :
                                      #  if validation_prob[j_eff][x][y][trk] > prob_thr :# and target_prob[j_eff][x][y][trk] == 1:
                                     # if validation_par[j_eff][x][y][trk][0] != 0 or validation_par[j_eff][x][y][trk][1] != 0  or validation_par[j_eff][x][y][trk][2] != 0 or validation_par[j_eff][x][y][3] != 0 :
-                                         bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
-                                         bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
+                                         if not drawOnly : bins.append((validation_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
+                                         if not drawOnly : bins_pred.append(validation_par[j_eff][x][y][trk][par]*0.01)
                                          bins_target.append(target_[j_eff][x][y][trk][par]*0.01)
                                          nbin = nbin+1
-                                         if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
-                                            n_sig_ok = n_sig_ok+1
+                                         if not drawOnly :
+                                              if(validation_par[j_eff][x][y][trk][par]*target_[j_eff][x][y][trk][par]>0) : #same Sign
+                                                n_sig_ok = n_sig_ok+1
                  if nbin>0 :
                      fracsig=n_sig_ok/float(nbin)
                  else :
