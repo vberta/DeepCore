@@ -1,7 +1,22 @@
-# cms_mywork
-This is the area where I store all the code developed outside shared repositories of CMS. It contains quite unorganized software that will be eventually included in CMSSW or others collaboration frameworks in the future. 
+# DeepCore
 
-A raw description of the directory tree (or particular branches):
+This repository contains the code related to DeepCore (the CNN-based approach for the seeding in high energy jet tracking, in CMS reconstruction), outside of CMSSW. Is mostrly related to the training step, and dedicated validation plotter.
+
+More information about DeepCore can be found at: https://twiki.cern.ch/twiki/bin/view/CMSPublic/NNJetCoreAtCtD2019
+
+This repository contains the following directories:
+
+## training  : 
+
+## keras_to_TF :
+
+## plotting_scripts :
+
+## old development : 
+
+
+
+<!--- A raw description of the directory tree (or particular branches):
 
 
 ## trackjet directory:
@@ -20,3 +35,5 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - [] trackjet/Endcap_integration
 - [] pdf_peak_shift : the entire analysis
 - [] other missing stuff?
+
+-->
