@@ -135,7 +135,12 @@ if EXTRA_VALIDATION :
 #------------------------- FUNCTIONS AND CLASSES --------------------------#
 #--------------------------------------------------------------------------#
 
-class validationCall(Callback) :
+#Used in EXTRA_VALIDATION
+#produces:
+# 1) the residuals per epochs, 
+# 2) homemade chi2 estimation between target and prediction
+# 3) an efficiency and fake-rate estimation based on the chi2
+class validationCall(Callback) : 
     def on_epoch_end(self,epoch, logs={}) :
         [call_par, call_prob] = self.model.predict([input_,input_jeta,input_jpt])
         call_prob = call_prob[:,:,:,:,:-1]
@@ -211,12 +216,14 @@ class validationCall(Callback) :
         else :
            fake_rate_8[epoch] = N_fake_8/N_tot_fake
 
+#callback to have additional trained model every 10 epochs
 class wHistory(keras.callbacks.Callback):
    def on_epoch_end(self, epoch, logs={}):
        if epoch % 10 == 0 :
                self.model.save("trained"+str(epoch+0)+".h5")
 wH = wHistory()
 
+#callback to have the weight saved every batch
 class WeightsSaver(Callback):
     def __init__(self, N):
         self.N = N
@@ -228,7 +235,7 @@ class WeightsSaver(Callback):
             self.model.save_weights(name)
         self.batch += 1
 
-
+#used in EXTRA_VALIDATION to have additional log info
 class NBatchLogger(Callback):
     """
     A Logger that log average performance per `display` steps.
@@ -257,14 +264,15 @@ class NBatchLogger(Callback):
             self.metric_cache.clear()
 
 
+#used in the losses
 def _to_tensor(x, dtype):
     return ops.convert_to_tensor(x, dtype=dtype)
 
-
+#used in the losses
 def epsilon():
     return _Epsilon
 
-
+#loss function for probability, used in the first part of the training
 def loss_ROI_crossentropy(target, output):
     epsilon_ = _to_tensor(keras.backend.epsilon(), output.dtype.base_dtype)
     output = clip_ops.clip_by_value(output, epsilon_, 1 - epsilon_)
@@ -274,9 +282,9 @@ def loss_ROI_crossentropy(target, output):
     output = math_ops.log(output / (1 - output))
     retval = nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=10)#900=works #2900=200x200, 125=30x30
     retval = retval*wei
-    return tf.reduce_sum(retval, axis=None)/(tf.reduce_sum(wei,axis=None)+0.00001)
+    return tf.reduce_sum(retval, axis=None)/(tf.reduce_sum(wei,axis=None)+0.00001) #0.00001 needed to avoid numeric issue
 
-
+#loss function for probability, used in the last part of the training (difference: non-zero weight to pixel far from crossing point)
 def loss_ROIsoft_crossentropy(target, output):
     epsilon_ = _to_tensor(keras.backend.epsilon(), output.dtype.base_dtype)
     output = clip_ops.clip_by_value(output, epsilon_, 1 - epsilon_)
@@ -285,10 +293,10 @@ def loss_ROIsoft_crossentropy(target, output):
     output = output[:,:,:,:,:-1]
     output = math_ops.log(output / (1 - output))
     retval = nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=10)#900=works #2900=200x200, 125=30x30
-    retval = retval*(wei+0.01)
+    retval = retval*(wei+0.01) # here the difference
     return tf.reduce_sum(retval, axis=None)/(tf.reduce_sum(wei,axis=None))
 
-
+#loss for track parameter
 def loss_mse_select_clipped(y_true, y_pred) :
     wei = y_true[:,:,:,:,-1:]
     pred = y_pred[:,:,:,:,:-1]
@@ -296,7 +304,7 @@ def loss_mse_select_clipped(y_true, y_pred) :
     out =K.square(tf.clip_by_value(pred-true,-5,5))*wei
     return tf.reduce_sum(out, axis=None)/(tf.reduce_sum(wei,axis=None)*5+0.00001) #5=parNum
 
-
+# Generator used to load all the input file in the LOCAL_INPUT=False workflow
 def Generator(files) :
     while 1:
         for f in files :
@@ -314,12 +322,11 @@ def Generator(files) :
             nev = len(target_prob)
             target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,overlapNum,1))
             target_prob = concatenatenp([target_prob,wei],axis=4)
-            # target_ = concatenatenp([target_[:,:,:,:,:-2],wei],axis=4)#PTLINE
 
             for k in range(len(input_jeta)/batch_size) :
                 yield [input_[batch_size*(k):batch_size*(k+1)],input_jeta[batch_size*(k):batch_size*(k+1)],input_jpt[batch_size*(k):batch_size*(k+1)]], [target_[batch_size*(k):batch_size*(k+1)],target_prob[batch_size*(k):batch_size*(k+1)]]
 
-
+# linear propagation to the 4 barrel layers, with plotting purpose only
 def prop_on_layer(x1,y1,eta,phi,eta_jet,lay) :
 
     theta_jet = 2*math.atan(math.exp(-eta_jet))
@@ -342,7 +349,7 @@ def prop_on_layer(x1,y1,eta,phi,eta_jet,lay) :
 
     return (x_out,y_out)
     
-
+# function called with  TEST_SAMPLE_BUILD=True
 def test_sample_creation(input_,input_jeta,input_jpt,target_,target_prob) :
     print("testing sample creation: ...")
     for jj in range (jetNum_test) :
@@ -360,7 +367,8 @@ def test_sample_creation(input_,input_jeta,input_jpt,target_,target_prob) :
     print("... save ...")
     np.savez("DeepCore_ev{ev}_test".format(ev=jetNum_test), input_=input_test, input_jeta=input_jeta_test, input_jpt=input_jpt_test, target_=target_test, target_prob =target_prob_test)
     print("..completed")
-    
+
+# function called with  AVERAGE_VALUES_TEST=True
 def average_1_eval(input_, target_prob) :
     aver1=0
     print("evaluation of the number of 1, input len=",int(len(input_)))
@@ -381,8 +389,9 @@ def average_1_eval(input_, target_prob) :
     aver1 = float(aver1)/float(len(input_))
     print("average of the number of 1", aver1)
     print("Multiplicative factor to 1", 1/aver1)
-    
-def Dev1ev_sampleBuilding(input_,input_jeta,input_jpt,target_,target_prob) :
+
+# function called with  DEB1EV=True
+def Deb1ev_sampleBuilding(input_,input_jeta,input_jpt,target_,target_prob) :
     print("Dev1ev ampleBuilding")
     input_= input_[1:2]
     input_jeta= input_jeta[1:2]
@@ -390,6 +399,7 @@ def Dev1ev_sampleBuilding(input_,input_jeta,input_jpt,target_,target_prob) :
     target_= target_[1:2]
     target_prob= target_prob[1:2]
 
+# function called with  AVERAGE_VALUES_TEST=True
 def averageADC(input_) :  
     averADC=0
     norm = 0
@@ -417,7 +427,7 @@ def averageADC(input_) :
     plt.grid(True)
     pylab.savefig("ADC_count.pdf")  
 
-
+# function called with  CHECK_SAMPLE=True
 def check_sample(files_input,files_input_validation) :
     #------ check nan/inf in the sample -------------#
     import uproot
@@ -475,12 +485,10 @@ def check_sample(files_input,files_input_validation) :
 
 
 #-----------------------------------------------------------------------------#
-#----------------------------------NUMPY INPUT -------------------------------#
+#----------------------------------INPUT -------------------------------------#
 #-----------------------------------------------------------------------------#
 
-
-print("local input flag=",LOCAL_INPUT)
-if(LOCAL_INPUT) :
+if(LOCAL_INPUT) : #loaded the local input
     print("WARNING: using local data (also for training!)")
     print("loading data: start")
 
@@ -498,11 +506,10 @@ if(LOCAL_INPUT) :
         nev = len(target_prob)
         target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,overlapNum,1))
         target_prob = concatenatenp([target_prob,wei],axis=4)
-        # target_ = concatenatenp([target_[:,:,:,:,:-2],wei],axis=4)#PTLINE
 
     print("loading data: completed")
 
-else :
+else :  #loaded the central input
     #---------------- central input  ----------------#
 
     #barrel full stat
@@ -537,7 +544,7 @@ if LOCAL_INPUT :
         average_1_eval(input_, target_prob)
         averageADC(input_)
     if DEB1EV :
-        Dev1ev_sampleBuilding(input_,input_jeta,input_jpt,target_,target_prob)
+        Deb1ev_sampleBuilding(input_,input_jeta,input_jpt,target_,target_prob)
 elif CHECK_SAMPLE:
     check_sample(files_,files_validation)
 
@@ -556,7 +563,7 @@ elif CHECK_SAMPLE:
 # Epochs 200-233 ---> 200k ev, LR= 0.000001,  loss_ROIsoft_crossentropy
 # Epochs 233-239 ---> 22M ev,  LR= 0.000001,  loss_ROIsoft_crossentropy
 # Epochs 239-246 ---> 22M ev,  LR =0.0000001, loss_ROIsoft_crossentropy, epochs of 1M ev--> steps/20
-# Epochs 246-252 ---> 22M ev,  LR =0.00000001,loss_ROIsoft_crossentropy, epochs of 1M ev--> steps/20, batch_size=64 (experimental, neve used)
+# Epochs 246-252 ---> 22M ev,  LR =0.00000001,loss_ROIsoft_crossentropy, epochs of 1M ev--> steps/20, batch_size=64 (experimental, never used in CMSSW)
 
 if TRAIN or PREDICT :
 
@@ -644,11 +651,13 @@ if TRAIN :
     print("Number of Steps=",stepNum)
     
     if CONTINUE_TRAINING :
-        # model.load_weights('weights.246-0.87.hdf5')#part16_bis   (ROIsoft & 0.1verylowLR & fullstat with stepNum=stepNum/20, bat64)
-        # model.load_weights('weights.252-0.87.hdf5')#part17 (come sopra)# LAST GOOD ONE 
         
-        #EC test nightly training
-        # model.load_weights('weights.54-26.91.hdf5')
+        #Barrel training (used in presentation, CMSSW PR...)
+        # model.load_weights('weights.246-0.87.hdf5')
+        
+        #EndCap training, last weights (not satisfactory, consider to restart)
+        # model.load_weights('NNPixSeed_train_event_20820737_ep150_simHitOnly.h5')
+        
         model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=start_epoch))
     else : #restart training
         start_epoch = 0
@@ -673,6 +682,7 @@ if TRAIN :
     print("training: completed")
 
 
+    #plot of the losses ----------------
     pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_ev{ev}.pdf".format( Epoch=epochs,ev=jetNum))
 
     if(not DEB1EV) :
@@ -737,15 +747,13 @@ if PREDICT :
 
     print("prediction: start")
 
-    if not TRAIN :        
-        #model.load_weights('weights.246-0.87.hdf5') #FINAL BARREL GOOD ONE 
+    if not TRAIN : #must be loaded previously produced weights, otherwise if you predict on the same sample of the training not needed
+        #Barrel training (used in presentation, CMSSW PR...)
+        #model.load_weights('weights.246-0.87.hdf5')
 
-        #ECtraining from here -----------------------
-        # model.load_weights('NNPixSeed_train_event_16793.6_ep453_simHitOnly.h5') #local file with 254 epochs
-        # model.load_weights('NNPixSeed_train_event_20820737_ep50_simHitOnly.h5') #50 epochs, medium sample
-        model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=epochs+start_epoch)) #50 epochs, medium sample
-
-        
+        #EndCap training, last weights (not satisfactory, consider to restart)      
+        # model.load_weights('NNPixSeed_train_event_20820737_ep150_simHitOnly.h5')
+        model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=epochs+start_epoch)) 
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
     validation_par = np.float64(validation_par)
@@ -826,12 +834,12 @@ if OUTPUT :
 
 
      for jet in range(numPrint) :
-         print("New Event ============================================================================================")
+         print("=================================== New Event ======================================")
 
          j_eff = jet+validation_offset
         #  j_eff = jet #WARNING, is this intended? 
 
-         #check if lay1 is broken!
+         #check if lay1 is broken
          brokenLay_flag = False
          brokenLay_cut = 0
          for x in range(jetDim) :
@@ -841,6 +849,7 @@ if OUTPUT :
          if(not brokenLay_flag) :
             brokenLay_cut = 0.35
 
+         # fill the histos   
          for lay in range(layNum) :
              tarPoint = 0
              predPoint = 0
@@ -895,7 +904,7 @@ if OUTPUT :
      output_file = ROOT.TFile("DeepCore_mapValidation_ev{ev}.root".format(ev=jetNum),"recreate")
      from array import array as array2
 
-     if(RGB) :
+     if(RGB) : #set the color scheme
 
          NCont=10
 
@@ -963,7 +972,7 @@ if OUTPUT :
          palette[:]=[]
          array_of_palette.append(paletteArray)
 
-
+     # build the cavases
      for jet in range(numPrint) :
 
          #check if lay1 is broken!
@@ -1088,11 +1097,8 @@ if OUTPUT :
 
      output_file.Close()
 
-
-
-
-
-     if(not ON_DATA) :
+     #plot of parameters distributions and residuals
+     if(not ON_DATA) : 
          print("parameter file: start looping")
          pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_ev{ev}.pdf".format(ev=jetNum))
 
