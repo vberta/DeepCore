@@ -33,77 +33,94 @@ from  matplotlib import pyplot as plt
 import pylab
 import glob
 
-#######################################
-#
-# USAGE
-# python yoloJet.py --input INPUT --training --predict --output
-# * option --input: for prediction and output. IF LOCAL_INPUT=True--> also for training
-# * option --training: better on GPU. the train/validation sample is harcoded.  IF CONTINUE_TRAINING, star_epoch must specified
-# * option --predict: ok both on GPU and CPU. if without --training the weights must be specified (hardcoded)
-# * option --output: root and pdf file. if drawonly=True-->no prediction (to draw without train/predict)
-#
-######################################
+#################################################################################################################################################################################################################################################################################
+##
+##     USAGE
+##  
+##   standard workflow: 
+##   1) python DeepCore.py --training                            #possibly on GPU, in this case the full training sample (hardcoded in the script) will be used
+##   1.5) python DeepCore.py --training --continueTraining       #(step not mandatory) possibly on GPU, continue the training from the previously produced weights. The starting epochs and the input weights must be modified in the code
+##   2) python DeepCore.py --predict --input INPUTNAME.root      #prediction on the "INPUTNAME.root" sample using the previously done training
+##   3) python DeepCore.py --output --input INPUTNAME.root       #production of the validation rootfile using the previously produced prediction. needed ROOT. 
+##  
+##   all-in-one workflow (NOT recommended): local input training,  prediction and output validation on the same sample. needed ROOT.
+##   python DeepCore.py --input INPUTNAME.root  --training --predict --output
+##
+##   several additional validation options are present, see in the Parser for full description.
+################################################################################################################################################################################################################################################################################
 
 
 parser = argparse.ArgumentParser(description="DeepCore NN training and prediction-test script")
-parser.add_argument('--training',   dest='Training',    action='store_const',   const=True, default=False,                          help='do the training of NN')
-parser.add_argument('--predict',    dest='Predict',     action='store_const',   const=True, default=False,                          help='do the prediction of NN')
-parser.add_argument('--output',     dest='Output',      action='store_const',   const=True, default=False,                          help='produce the output root file. NB: do not use on GPU')
-parser.add_argument('--input',      dest='Input',       action='store',                     default="toy_MC_1000.npy",  type=str,   help='name of the input file (used only if "LOCAL_INPUT" is set to True)')
+parser.add_argument('--training',               dest='Training',                action='store_const',   const=True, default=False,           help='do the training of NN, if --input is empty used hardcoded sample')
+parser.add_argument('--predict',                dest='Predict',                 action='store_const',   const=True, default=False,           help='do the prediction of NN, if without --training hardcoded weights are used')
+parser.add_argument('--output',                 dest='Output',                  action='store_const',   const=True, default=False,           help='produce the output root file. NB: do not use on GPU (needed ROOT)')
+parser.add_argument('--input',                  dest='Input',                   action='store',                     default='',  type=str,   help='name of the local input file, if missing using large size sample (hardcoded)')
+parser.add_argument('--continueTraining',       dest='continueTraining',        action='store_const',   const=True, default=False,           help='continue the training from a previous step, start epoch hardcoded')
+parser.add_argument('--onData',                 dest='onData',                  action='store_const',   const=True, default=False,           help='running on data (without the target, to check performance)')
+parser.add_argument('--drawOnly',               dest='drawOnly',                action='store_const',   const=True, default=False,           help='draw in output info of input/target without prediction (to check the input features)')
+parser.add_argument('--deb1ev',                 dest='deb1ev',                  action='store_const',   const=True, default=False,           help='debug on a single event')
+parser.add_argument('--checkSample',            dest='checkSample',             action='store_const',   const=True, default=False,           help='check for NAN in the sample before training (very time consuming, only if strongly needed!)')
+parser.add_argument('--averageValueTest',       dest='averageValueTest',        action='store_const',   const=True, default=False,           help='evaluation and print of average ADC count of input and 1-values present on the input (non required in standard workflow, only as extra validation)')
+parser.add_argument('--testSampleBuild',        dest='testSampleBuild',         action='store_const',   const=True, default=False,           help='building a local test sample, useful to validation if is not present')
+parser.add_argument('--extraValidation',        dest='extraValidation',         action='store_const',   const=True, default=False,           help='extra validation plot during training (very time consuming callback!)')
+parser.add_argument('--rgb',                    dest='rgb',                     action='store_const',   const=True, default=False,           help='RGB color scheme plots (used in all the presented results')
+
 args = parser.parse_args()
 
 OUTPUT = args.Output
 TRAIN = args.Training
 PREDICT = args.Predict
 input_name = args.Input
-
-
+CONTINUE_TRAINING = args.continueTraining
+ON_DATA = args.onData
+DRAW_ONLY = args.drawOnly
+DEB1EV = args.deb1ev
+CHECK_SAMPLE = args.checkSample
+AVERAGE_VALUES_TEST = args.averageValueTest
+TEST_SAMPLE_BUILD = args.testSampleBuild
+EXTRA_VALIDATION = args.extraValidation
+RGB = args.rgb
 
 #------------------------------------------------------------------------------------------#
 #----------------------------- INTERNAL CONFIGURATION PARAMETERS --------------------------#
 #------------------------------------------------------------------------------------------#
 
-LOCAL_INPUT = False    #use small local data, if this is false "input_name" is ignored
-numPrint =20 #number of event saved in the root file
-CONTINUE_TRAINING = True #continue the training from a previous step
-outEvent= 30 #complete plots for this event only
-ON_DATA=False #running on data (without the target, to check performance)
-DRAW_ONLY = False #draw in output info of input/target without prediction
-inputModuleName="NNClustSeedInputSimHitTree"
-DEB1EV = False #debug on a single event
-CHECK_SAMPLE=False #check for NAN in the sample before training (very time consuming, only if strongly needed!)
-AVERAGE_VALUES_TEST = False #evaluation and print of average ADC count of input and 1-values present on the input (non required in standard workflow, only as extra validation)
-TEST_SAMPLE_BUILD = False # building og a local test sample, useful to validation if is not present
-EXTRA_VALIDATION = False #extra validation plot during training (very time consuming callback!)
-RGB=False #RGB-like plots
+if input_name != '' :
+    LOCAL_INPUT = True   #use the local input, "input_name"
+else :
+    LOCAL_INPUT = False #use the large sample, hardcoded below
 
+#general configuration 
+jetNum=0# number of jets in the input. will be filled with local input information
+jetNum_validation = 0# number of jets in the input. will be filled with local input information
+jetDim=30 #dimension of window on the pixed detector layer (cannot be changed without chaning the training sample)
+overlapNum =3 #numer of overlap considered (cannot be changed without chaning the training sample)
+layNum = 7 #4 barrel+3 endcap. the numeration is 1-4 for barrel, 5-7 for endcap (cannot be changed without chaning the training sample).
+parNum=5 #number of track parameters (cannot be changed without chaning the training sample)
+_Epsilon = 1e-7 #value needed for the loss functione valuation
+inputModuleName="DeepCoreNtuplizerTest"
+inputTreeName="DeepCoreNtuplizerTree"
+# inputModuleName="demo" #2017 ntuples have this name
+# inputTreeName="NNClustSeedInputSimHitTree" #2017 ntuples have this name
 
+# traing parameter configuration
 batch_size = 64 # Batch size for training.
-print("THE BATCH SIZE IS ",batch_size)
-epochs = 100#54 # Number of epochs to train for.
-# start_epoch = 253 #260 sono senza dropout #260-285 con dropout BARREL
-start_epoch = 50 #260 sono senza dropout #260-285 con dropout
+epochs = 3 # Number of epochs to train for.
+start_epoch = 0 #starting epoch, to restart with proper numbering used when CONTINUE_TRAINING=True
+valSplit=0.2 # fraction of input used for validation
+prob_thr =0.85 # threshold to identfy good prediciton (see DeepCore documentation to details)
 
-valSplit=0.2
-prob_thr =0.85
+#plotting configuration
+numPrint =5 #number of event saved in the root file
+outEvent= 30 #complete plots for this event only
 
-jetNum=16460#1000#16460#200000#100000
-jetNum_validation = 3441
-jetDim=30
-trackNum =3# 10
-genTrackNum=3
-layNum = 7
-parNum=5
-
-jetNum_test=50
-input_test = np.zeros(shape=(jetNum_test, jetDim,jetDim,layNum)) #jetMap
-target_test = np.zeros(shape=(jetNum_test,jetDim, jetDim,trackNum,parNum+1))#+1
-target_prob_test = np.zeros(shape=(jetNum_test,jetDim,jetDim,trackNum))
-input_jeta_test = np.zeros(shape=(jetNum_test))
-input_jpt_test = np.zeros(shape=(jetNum_test))
-
-layDist=3 #8 #3 is CMS
-_Epsilon = 1e-7
+if TEST_SAMPLE_BUILD :
+    jetNum_test=50
+    input_test = np.zeros(shape=(jetNum_test, jetDim,jetDim,layNum)) #jetMap
+    target_test = np.zeros(shape=(jetNum_test,jetDim, jetDim,overlapNum,parNum+1))#+1
+    target_prob_test = np.zeros(shape=(jetNum_test,jetDim,jetDim,overlapNum))
+    input_jeta_test = np.zeros(shape=(jetNum_test))
+    input_jpt_test = np.zeros(shape=(jetNum_test))
 
 if EXTRA_VALIDATION :
     efficiency_4 = np.zeros(epochs) #probably it can be removed (and also next lines)
@@ -120,7 +137,8 @@ if EXTRA_VALIDATION :
 
 class validationCall(Callback) :
     def on_epoch_end(self,epoch, logs={}) :
-        [call_par, call_prob] = self.model.predict(input_)
+        [call_par, call_prob] = self.model.predict([input_,input_jeta,input_jpt])
+        call_prob = call_prob[:,:,:,:,:-1]
 
         for par in range(parNum) :
             bins = []# np.zeros(shape=(int(jetNum*valSplit)))
@@ -129,11 +147,13 @@ class validationCall(Callback) :
                 j_eff = j+int(jetNum*(1-valSplit))
                 for x in range(jetDim) :
                     for y in range(jetDim) :
-                        for trk in range(trackNum) :
-                            if call_prob[j_eff][x][y][trk] > prob_thr :
-                                if call_par[j_eff][x][y][trk][0] != 0 or call_par[j_eff][x][y][trk][1] != 0  or call_par[j_eff][x][y][trk][2] != 0 or call_par[j_eff][x][y][3] != 0 :
-                                    bins.append(call_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])
-                                    nbin = nbin+1
+                        for trk in range(overlapNum) :
+                             if target_prob[j_eff][x][y][trk][0] == 1 :
+                                if(par!=4) :
+                                    bins.append((call_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])*0.01)
+                                else :
+                                     bins.append((call_par[j_eff][x][y][trk][par] - target_[j_eff][x][y][trk][par])/target_[j_eff][x][y][trk][par])  #relative
+                                nbin = nbin+1
 
             plt.figure()
             pylab.hist(bins,100, facecolor='green', alpha=0.75)
@@ -148,14 +168,16 @@ class validationCall(Callback) :
         N_eff_8 = 0
         N_fake_4 =0
         N_fake_8 = 0
+        genTrackNum=3
         N_tot_eff = jetNum*valSplit*genTrackNum
         N_tot_fake = 0
+        layDist=3
         for j in range (int(jetNum*valSplit)) :
             j_eff = j+int(jetNum*(1-valSplit))
             for x in range(jetDim) :
                 for y in range(jetDim) :
-                    for trk in range(trackNum) :
-                        if target_prob[j_eff][x][y][trk]==1 :
+                    for trk in range(overlapNum) :
+                        if target_prob[j_eff][x][y][trk][0]==1 :
                             chi2x = (call_par[j_eff][x][y][trk][0] - target_[j_eff][x][y][trk][0])**2
                             chi2y = (call_par[j_eff][x][y][trk][1] - target_[j_eff][x][y][trk][1])**2
                             chi2xt = (call_par[j_eff][x][y][trk][2] - target_[j_eff][x][y][trk][2])**2 / math.atan(2/float(layDist*3))
@@ -172,11 +194,9 @@ class validationCall(Callback) :
                             chi2xt = (call_par[j_eff][x][y][trk][2] - target_[j_eff][x][y][trk][2])**2 / math.atan(2/float(layDist*3))
                             chi2yt = (call_par[j_eff][x][y][trk][3] - target_[j_eff][x][y][trk][3])**2 / math.atan(2/float(layDist*3))
                             chi2 = chi2x+chi2y+chi2xt+chi2yt
-                            if chi2>=4  and target_prob[j_eff][x][y][trk]==1:
-                                print("fake 4!")
+                            if chi2>=4  and target_prob[j_eff][x][y][trk][0]==1:
                                 N_fake_4 = N_fake_4 +1
-                            if chi2>=8  and target_prob[j_eff][x][y][trk]==1:
-                                print("fake 8!")
+                            if chi2>=8  and target_prob[j_eff][x][y][trk][0]==1:
                                 N_fake_8 = N_fake_8 +1
 
         efficiency_4[epoch] = N_eff_4/N_tot_eff
@@ -283,7 +303,7 @@ def Generator(files) :
             import uproot
             tfile = uproot.open(f)
 
-            tree = tfile["demo"][inputModuleName]
+            tree = tfile[inputModuleName][inputTreeName]
             input_ = tree.array("cluster_measured")
             input_jeta = tree.array("jet_eta")
             input_jpt = tree.array("jet_pt")
@@ -292,7 +312,7 @@ def Generator(files) :
 
             wei = target_[:,:,:,:,-1:]
             nev = len(target_prob)
-            target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,trackNum,1))
+            target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,overlapNum,1))
             target_prob = concatenatenp([target_prob,wei],axis=4)
             # target_ = concatenatenp([target_[:,:,:,:,:-2],wei],axis=4)#PTLINE
 
@@ -334,11 +354,11 @@ def test_sample_creation(input_,input_jeta,input_jpt,target_,target_prob) :
                 for par in range(parNum+1) :
                     if(par<4) :
                         input_test[jj][x][y][par] = input_[j][x][y][par]
-                    for trk in range(trackNum) :
+                    for trk in range(overlapNum) :
                         target_test[jj][x][y][trk][par] = target_[j][x][y][trk][par]
                         target_prob_test[jj][x][y][trk] = target_prob[j][x][y][trk]
     print("... save ...")
-    np.savez("DeepCore_event_{ev}_test".format(ev=jetNum_test), input_=input_test, input_jeta=input_jeta_test, input_jpt=input_jpt_test, target_=target_test, target_prob =target_prob_test)
+    np.savez("DeepCore_ev{ev}_test".format(ev=jetNum_test), input_=input_test, input_jeta=input_jeta_test, input_jpt=input_jpt_test, target_=target_test, target_prob =target_prob_test)
     print("..completed")
     
 def average_1_eval(input_, target_prob) :
@@ -372,30 +392,30 @@ def Dev1ev_sampleBuilding(input_,input_jeta,input_jpt,target_,target_prob) :
 
 def averageADC(input_) :  
     averADC=0
-        norm = 0
-        bins = []
-        print("evaluation of averge ADC count")
-        for j in range (int(len(input_))) :
-            # averjet = 0
-            for x in range(jetDim) :
-                for y in range(jetDim) :
-                    for l in range(layNum) :
-                        if(input_[j][x][y][l]!=0) :
-                            averADC=averADC+input_[j][x][y][l]
-                            bins.append(input_[j][x][y][l])
-                            norm = norm +1
-        averADC = float(averADC)/float(norm)
-        occupancy = float(norm)/(float(jetDim*jetDim*layNum*int(len(input_))))
-        print("average value of input=", averADC)
-        print("average occupancy=", occupancy)
+    norm = 0
+    bins = []
+    print("evaluation of averge ADC count")
+    for j in range (int(len(input_))) :
+        # averjet = 0
+        for x in range(jetDim) :
+            for y in range(jetDim) :
+                for l in range(layNum) :
+                    if(input_[j][x][y][l]!=0) :
+                        averADC=averADC+input_[j][x][y][l]
+                        bins.append(input_[j][x][y][l])
+                        norm = norm +1
+    averADC = float(averADC)/float(norm)
+    occupancy = float(norm)/(float(jetDim*jetDim*layNum*int(len(input_))))
+    print("average value of input=", averADC)
+    print("average occupancy=", occupancy)
 
-        plt.figure()
-        pylab.hist(bins,100, facecolor='green')
-        pylab.title('Non-zero ADC count distribution')
-        pylab.ylabel('entries')
-        pylab.xlabel('ADC count')
-        plt.grid(True)
-        pylab.savefig("ADC_count.pdf")  
+    plt.figure()
+    pylab.hist(bins,100, facecolor='green')
+    pylab.title('Non-zero ADC count distribution')
+    pylab.ylabel('entries')
+    pylab.xlabel('ADC count')
+    plt.grid(True)
+    pylab.savefig("ADC_count.pdf")  
 
 
 def check_sample(files_input,files_input_validation) :
@@ -405,7 +425,7 @@ def check_sample(files_input,files_input_validation) :
     print("number of  file=", len(files_input))
     for f in files_input :
             tfile = uproot.open(f)
-            tree = tfile["demo"][inputModuleName]
+            tree = tfile[inputModuleName][inputTreeName]
             input_ = tree.array("cluster_measured")
             input_jeta = tree.array("jet_eta")
             input_jpt = tree.array("jet_pt")
@@ -426,7 +446,7 @@ def check_sample(files_input,files_input_validation) :
             print("file target prob ",f,", inf=",np.isinf(np.sum(target_prob)))
     for f in files_input_validation :
             tfile = uproot.open(f)
-            tree = tfile["demo"][inputModuleName]
+            tree = tfile[inputModuleName][inputTreeName]
             input_ = tree.array("cluster_measured")
             input_jeta = tree.array("jet_eta")
             input_jpt = tree.array("jet_pt")
@@ -466,8 +486,8 @@ if(LOCAL_INPUT) :
 
     import uproot
     tfile = uproot.open(input_name)
-    tree = tfile["demo"][inputModuleName]
-    tree = tfile["demo"][inputModuleName]
+    tree = tfile[inputModuleName][inputTreeName]
+    tree = tfile[inputModuleName][inputTreeName]
     input_ = tree.array("cluster_measured")
     input_jeta = tree.array("jet_eta")
     input_jpt = tree.array("jet_pt")
@@ -476,7 +496,7 @@ if(LOCAL_INPUT) :
         target_prob = tree.array("trackProb")
         wei = target_[:,:,:,:,-1:]
         nev = len(target_prob)
-        target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,trackNum,1))
+        target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,overlapNum,1))
         target_prob = concatenatenp([target_prob,wei],axis=4)
         # target_ = concatenatenp([target_[:,:,:,:,:-2],wei],axis=4)#PTLINE
 
@@ -554,7 +574,7 @@ if TRAIN or PREDICT :
     print("ComplInput=", ComplInput.shape)
 
    
-    conv30_9 = Conv2D(50,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)#20 instead of 50
+    conv30_9 = Conv2D(50,7, data_format="channels_last", input_shape=(jetDim,jetDim,layNum+2), activation='relu',padding="same")(ComplInput)
     conv30_7 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_9)
     conv30_5 = Conv2D(20,5, data_format="channels_last", activation='relu',padding="same")(conv30_7)#
     conv20_5 = Conv2D(18,5, data_format="channels_last", activation='relu',padding="same")(conv30_5)
@@ -564,13 +584,13 @@ if TRAIN or PREDICT :
     conv15_3_2 = Conv2D(18,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_1)
     conv15_3_3 = Conv2D(18,3, data_format="channels_last",activation='relu', padding="same")(conv15_3_2) #(12,3)
     conv15_3 = Conv2D(18,3, data_format="channels_last",padding="same")(conv15_3_3) #(12,3)
-    reshaped = Reshape((jetDim,jetDim,trackNum,parNum+1))(conv15_3)
+    reshaped = Reshape((jetDim,jetDim,overlapNum,parNum+1))(conv15_3)
 
     conv12_3_1 = Conv2D(12,3, data_format="channels_last", activation='relu', padding="same")(conv15_5)  #new
     conv1_3_2 = Conv2D(9,3, data_format="channels_last", activation='relu', padding="same")(conv12_3_1) #drop7lb   #new
     conv1_3_3 = Conv2D(7,3, data_format="channels_last", activation='relu',padding="same")(conv1_3_2) #new
     conv1_3_1 = Conv2D(6,3, data_format="channels_last", activation='sigmoid', padding="same")(conv1_3_3)
-    reshaped_prob = Reshape((jetDim,jetDim,trackNum,2))(conv1_3_1)
+    reshaped_prob = Reshape((jetDim,jetDim,overlapNum,2))(conv1_3_1)
 
     model = Model([NNinputs,NNinputs_jeta,NNinputs_jpt],[reshaped,reshaped_prob])
     
@@ -586,14 +606,13 @@ if TRAIN or PREDICT :
 
 
 
-#evaluation of number of events used #----------
-
+#evaluation of number of events used 
 import uproot
 tot_events = 0
 tot_events_validation = 0
 if(LOCAL_INPUT) :
     tfile = uproot.open(input_name)
-    tree = tfile["demo"][inputModuleName]
+    tree = tfile[inputModuleName][inputTreeName]
     input_jeta2 = tree.array("jet_eta")
     tot_events = len(input_jeta2)
     tot_events_validation=tot_events*valSplit
@@ -603,12 +622,12 @@ else :
     print("number of file validation=", len(files_validation))
     for f in files :
         tfile = uproot.open(f)
-        tree = tfile["demo"][inputModuleName]
+        tree = tfile[inputModuleName][inputTreeName]
         input_jeta2 = tree.array("jet_eta")
         tot_events = tot_events+len(input_jeta2)
     for f in files_validation :
         tfile = uproot.open(f)
-        tree = tfile["demo"][inputModuleName]
+        tree = tfile[inputModuleName][inputTreeName]
         input_jeta2 = tree.array("jet_eta")
         tot_events_validation = tot_events_validation+len(input_jeta2)
 
@@ -616,8 +635,6 @@ jetNum = tot_events
 jetNum_validation = tot_events_validation
 print("total number of events =", jetNum)
 print("total number of events validation=", jetNum_validation)
-
-#---------------#
 
 
 checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=False)
@@ -632,7 +649,7 @@ if TRAIN :
         
         #EC test nightly training
         # model.load_weights('weights.54-26.91.hdf5')
-        model.load_weights('weights.50-2.51.hdf5')
+        model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=start_epoch))
     else : #restart training
         start_epoch = 0
     
@@ -650,13 +667,13 @@ if TRAIN :
     else : #full standard training
         history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum/20, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, initial_epoch=start_epoch, callbacks=[checkpointer])
         
-    model.save_weights('DeepCore_train_event{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
-    model.save('DeepCore_model_event{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
+    model.save_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
+    model.save('DeepCore_model_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
     
     print("training: completed")
 
 
-    pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_event{ev}.pdf".format( Epoch=epochs,ev=jetNum))
+    pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_ev{ev}.pdf".format( Epoch=epochs,ev=jetNum))
 
     if(not DEB1EV) :
         plt.figure(1000)
@@ -725,12 +742,14 @@ if PREDICT :
 
         #ECtraining from here -----------------------
         # model.load_weights('NNPixSeed_train_event_16793.6_ep453_simHitOnly.h5') #local file with 254 epochs
-        model.load_weights('NNPixSeed_train_event_20820737_ep50_simHitOnly.h5') #50 epochs, medium sample
+        # model.load_weights('NNPixSeed_train_event_20820737_ep50_simHitOnly.h5') #50 epochs, medium sample
+        model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=epochs+start_epoch)) #50 epochs, medium sample
+
         
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
     validation_par = np.float64(validation_par)
-    np.savez("DeepCore_prediction_event_{ev}".format(ev=jetNum), validation_par=validation_par, validation_prob=validation_prob)
+    np.savez("DeepCore_prediction_ev{ev}".format(ev=jetNum), validation_par=validation_par, validation_prob=validation_prob)
 
     print("prediction: completed")
 
@@ -742,10 +761,10 @@ if PREDICT :
 
 
 if OUTPUT :
-     if predict == False  and (not DRAW_ONLY):
+     if PREDICT == False  and (not DRAW_ONLY):
 
         print("prediction loading: start")
-        loadpred = np.load("DeepCore_prediction_event_{ev}.npz".format(ev=jetNum))#106.4
+        loadpred = np.load("DeepCore_prediction_ev{ev}.npz".format(ev=jetNum))#106.4
 
         validation_par = loadpred['validation_par']
         validation_prob = loadpred['validation_prob']
@@ -757,8 +776,9 @@ if OUTPUT :
      if (not DRAW_ONLY):
         validation_prob = validation_prob[:,:,:,:,:-1]
 
-     from ROOT import *
+     import ROOT
      from ROOT import gStyle
+     from ROOT import gROOT
      gROOT.Reset()
      gROOT.SetBatch(True)
      gStyle.SetOptStat(0)
@@ -783,16 +803,16 @@ if OUTPUT :
          graphPredTot_jet = []
 
 
-         for trk in range(trackNum) :
-            canvasProb_jet.append(TCanvas("canvasProb_%d_%d" % (jet,trk), "canvasProb_%d_%d" % (jet,trk),500,800))
-            mapProbPredTot_jet.append(TH2F("mapProbPredTot_%d_%d" % (jet,trk), "mapProbPredTot_%d_%d" % (jet,trk), jetDim,-jetDim/2,jetDim/2,jetDim,-jetDim/2,jetDim/2))
+         for trk in range(overlapNum) :
+            canvasProb_jet.append(ROOT.TCanvas("canvasProb_%d_%d" % (jet,trk), "canvasProb_%d_%d" % (jet,trk),500,800))
+            mapProbPredTot_jet.append(ROOT.TH2F("mapProbPredTot_%d_%d" % (jet,trk), "mapProbPredTot_%d_%d" % (jet,trk), jetDim,-jetDim/2,jetDim/2,jetDim,-jetDim/2,jetDim/2))
 
          for lay in range(layNum) :
-             mapTot_jet.append(TH2F("mapTot_%d_%d" % (jet, lay), "mapTot_%d_%d" % (jet, lay), jetDim,-jetDim/2,jetDim/2,jetDim,-jetDim/2,jetDim/2))
-             canvasTot_jet.append(TCanvas("canvasTot_%d_%d" % (jet, lay), "canvasTot_%d_%d" % (jet, lay),500,800))
-             graphTargetTot_jet.append(TGraph())
-            #  graphPredTot_jet.append(TGraph(trackNum*3))
-             graphPredTot_jet.append(TGraph())
+             mapTot_jet.append(ROOT.TH2F("mapTot_%d_%d" % (jet, lay), "mapTot_%d_%d" % (jet, lay), jetDim,-jetDim/2,jetDim/2,jetDim,-jetDim/2,jetDim/2))
+             canvasTot_jet.append(ROOT.TCanvas("canvasTot_%d_%d" % (jet, lay), "canvasTot_%d_%d" % (jet, lay),500,800))
+             graphTargetTot_jet.append(ROOT.TGraph())
+            #  graphPredTot_jet.append(ROOT.TGraph(overlapNum*3))
+             graphPredTot_jet.append(ROOT.TGraph())
 
          mapTot.append(mapTot_jet)
          canvasTot.append(canvasTot_jet)
@@ -834,7 +854,7 @@ if OUTPUT :
                  for y in range(jetDim) :
                      mapTot[jet][lay].SetBinContent(x+1,y+1,input_[j_eff][x][y][lay])
                      if(input_[j_eff][x][y][lay]>0) : print("input pixel:", "(x,y)=",x,y, ", layer=",lay, ", value=", input_[j_eff][x][y][lay])
-                     for trk in range(trackNum) :
+                     for trk in range(overlapNum) :
                         if not DRAW_ONLY : 
                             mapProbPredTot[jet][trk].SetBinContent(x+1,y+1,validation_prob[j_eff][x][y][trk])
                         if(not ON_DATA) :
@@ -850,8 +870,8 @@ if OUTPUT :
                                 graphTargetTot[jet][2].SetPoint(tarPoint,x2,y2)
                                 graphTargetTot[jet][3].SetPoint(tarPoint,x3,y3)
                                 tarPoint = tarPoint+1
-                            if not DRAW_ONLY :
-                            if validation_prob[j_eff][x][y][trk] > (prob_thr-0.1*trk-brokenLay_cut) and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #QUESTA E' la COSA GIUSTA SE NON DEBUGGO
+                        if not DRAW_ONLY :
+                            if validation_prob[j_eff][x][y][trk] > (prob_thr-0.1*trk-brokenLay_cut) and lay==1 : #and   target_prob[j_eff][x][y][trk] == 1: #this is an useful option to debug
                                 xx_pr= float(validation_par[j_eff][x][y][trk][0])/float(0.01)*0.01
                                 yy_pr= float(validation_par[j_eff][x][y][trk][1])/float(0.015)*0.01
                                 graphPredTot[jet][lay].SetPoint(predPoint,x+xx_pr-jetDim/2,y+yy_pr-jetDim/2)
@@ -867,12 +887,12 @@ if OUTPUT :
                                 print("________________________________________")
                                 print("New Pred, bin (x,y):",x-jetDim/2,y-jetDim/2)
                                 if(not ON_DATA):
-                                print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3]," ",target_[j_eff][x][y][trk][4],"Probabiity target=", target_prob[j_eff][x][y][trk])
-                                print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3]," ",validation_par[j_eff][x][y][trk][4], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
-                                print(" x0,y0=",x0,y0," x2,y2=",x2,y2," x3,y3=",x3,y3,)
+                                    print("target(x,y,eta,phi)=",target_[j_eff][x][y][trk][0]," ", target_[j_eff][x][y][trk][1]," ",target_[j_eff][x][y][trk][2]," ",target_[j_eff][x][y][trk][3]," ",target_[j_eff][x][y][trk][4],"Probabiity target=", target_prob[j_eff][x][y][trk])
+                                    print("prediction(x,y,eta,phi)=",validation_par[j_eff][x][y][trk][0]," ", validation_par[j_eff][x][y][trk][1]," ",validation_par[j_eff][x][y][trk][2]," ",validation_par[j_eff][x][y][trk][3]," ",validation_par[j_eff][x][y][trk][4], "Probabiity pred=", validation_prob[j_eff][x][y][trk])
+                                    print(" x0,y0=",x0,y0," x2,y2=",x2,y2," x3,y3=",x3,y3,)
 
 
-     output_file = TFile("DeepCore_mapValidation_events_{ev}.root".format(ev=jetNum),"recreate")
+     output_file = ROOT.TFile("DeepCore_mapValidation_ev{ev}.root".format(ev=jetNum),"recreate")
      from array import array as array2
 
      if(RGB) :
@@ -973,7 +993,7 @@ if OUTPUT :
              mapTot[jet][lay].GetXaxis().SetTitleOffset(0.7)
              mapTot[jet][lay].GetYaxis().SetTitleOffset(0.6)
 
-             latexCMS = TLatex()
+             latexCMS = ROOT.TLatex()
 
 
              if(not RGB) :
@@ -1013,7 +1033,7 @@ if OUTPUT :
 
 
 
-             legTot = TLegend(0.1,0.9,0.3,0.8);
+             legTot = ROOT.TLegend(0.1,0.9,0.3,0.8);
              if (not ON_DATA) :
                  legTot.AddEntry(graphTargetTot[jet][lay], "Target")
              legTot.AddEntry(graphPredTot[jet][lay], "Prediction")
@@ -1026,7 +1046,7 @@ if OUTPUT :
                  canvasTot[jet][lay].SaveAs("RGB_PixelMap_crosses_layer%d_event%d.pdf" % (lay,jet))
                  canvasTot[jet][lay].SaveAs("RGB_PixelMap_crosses_layer%d_event%d.png" % (lay,jet))
 
-         for trk in range(trackNum) :
+         for trk in range(overlapNum) :
              canvasProb[jet][trk].cd()
              mapProbPredTot[jet][trk].GetXaxis().SetRangeUser(-jetDim,jetDim)
              mapProbPredTot[jet][trk].GetYaxis().SetRangeUser(-jetDim,jetDim)
@@ -1052,7 +1072,7 @@ if OUTPUT :
              latexCMS.DrawLatex(12,16.2,"#bf{13 TeV}")
 
 
-             legProb = TLegend(0.1,0.9,0.3,0.8);
+             legProb = ROOT.TLegend(0.1,0.9,0.3,0.8);
              if (not ON_DATA) :
                 legProb.AddEntry(graphTargetTot[jet][1], "Target")
              legProb.AddEntry(graphPredTot[jet][1], "Prediction")
@@ -1074,7 +1094,7 @@ if OUTPUT :
 
      if(not ON_DATA) :
          print("parameter file: start looping")
-         pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_events_{ev}.pdf".format(ev=jetNum))
+         pdf_par = mpl.backends.backend_pdf.PdfPages("parameter_file_ev{ev}.pdf".format(ev=jetNum))
 
          for par in range(parNum) :
              bins = []# np.zeros(shape=(int(jetNum*valSplit)))
@@ -1083,10 +1103,11 @@ if OUTPUT :
              nbin =0
              n_sig_ok = 0
              for j in range (int(len(input_))) :
-                 j_eff = j+validation_offset
+                 j_eff = j
+                #  j_eff=j+validation_offset use this if you want to avoid to fill the histos with the event used in the training, but you have also to change the j range()
                  for x in range(jetDim) :
                      for y in range(jetDim) :
-                         for trk in range(trackNum) :
+                         for trk in range(overlapNum) :
                              if target_prob[j_eff][x][y][trk] == 1 :
                             #  if validation_prob[j_eff][x][y][trk] > prob_thr-0.1*trk-brokenLay_cut  and target_prob[j_eff][x][y][trk] == 1:# only "associated" 
                                      if(par!=4) :
