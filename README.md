@@ -54,17 +54,17 @@ The barrel training has been fully performed, in 2017 conditions. The endcap tra
 
 To repeat exactly the same training as the integrated barrel only training can be obtained changing `layNum` parameter of `DeepCore.py` from 7 to 4 and use the proper input. However it should be identical to provide an input sample with 7 layers but the layers 5,6,7 empty (obtained with the `barrelTrain` argument in the ntuplizer without changing the `layNum`.)
 
-
-
-
-
-
-
 ## keras_to_TF
 It contains the script `keras_to_tensorflow_custom.py`, which convert the `.h5` model returned by the `DeepCore.py --training` step to a `.pb` model, used in CMSSW. Details in the documentation inside the script.
 
 ## plotting_scripts
 some auto-esplicative python plotting script for loss, validation and performance comparison
+
+## data
+some relevant updated data, hardcoded in the `DeepCore.py` script:
+- barrel trained model (output of `DeepCore.py` --training): `DeepCore_barrel_weights.246-0.87.hdf5`
+- barrel trained model (output of `keras_to_tensorflow_custom.py`): `DeepCoreSeedGenerator_TrainedModel_barrel_2017_246ep.pb`
+- endcap weights after 150 epochs: `DeepCore_ENDCAP_train_ep150.h5`
 
 ## old development
 Old development of DeepCore, kept for backup, but completely deprecated. ___Do Not Use!!!___
