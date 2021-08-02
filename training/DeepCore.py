@@ -653,10 +653,10 @@ if TRAIN :
     if CONTINUE_TRAINING :
         
         #Barrel training (used in presentation, CMSSW PR...)
-        # model.load_weights('weights.246-0.87.hdf5')
+        # model.load_weights('../data/DeepCore_barrel_weights.246-0.87.hdf5')
         
         #EndCap training, last weights (not satisfactory, consider to restart)
-        # model.load_weights('NNPixSeed_train_event_20820737_ep150_simHitOnly.h5')
+        # model.load_weights('../data/DeepCore_ENDCAP_train_ep150.h5')
         
         model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=start_epoch))
     else : #restart training
@@ -749,10 +749,10 @@ if PREDICT :
 
     if not TRAIN : #must be loaded previously produced weights, otherwise if you predict on the same sample of the training not needed
         #Barrel training (used in presentation, CMSSW PR...)
-        #model.load_weights('weights.246-0.87.hdf5')
+        #model.load_weights('DeepCore_barrel_weights.246-0.87.hdf5')
 
         #EndCap training, last weights (not satisfactory, consider to restart)      
-        # model.load_weights('NNPixSeed_train_event_20820737_ep150_simHitOnly.h5')
+        # model.load_weights('DeepCore_ENDCAP_train_ep150.h5')
         model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=epochs+start_epoch)) 
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
