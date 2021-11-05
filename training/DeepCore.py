@@ -7,6 +7,7 @@ os.environ['openmp'] = 'True'
 
 import keras
 from keras.backend import tensorflow_backend as K
+
 from keras.callbacks import Callback
 from keras.models import Model,load_model, Sequential
 from keras.layers import Input, LSTM, Dense, Flatten, Conv2D, MaxPooling2D, Dropout, Reshape, Conv2DTranspose, concatenate, Concatenate, ZeroPadding2D, UpSampling2D, UpSampling1D
@@ -19,6 +20,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn
+
 
 import numpy as np
 from numpy import concatenate as concatenatenp
@@ -95,17 +97,17 @@ jetNum=0# number of jets in the input. will be filled with local input informati
 jetNum_validation = 0# number of jets in the input. will be filled with local input information
 jetDim=30 #dimension of window on the pixed detector layer (cannot be changed without chaning the training sample)
 overlapNum =3 #numer of overlap considered (cannot be changed without chaning the training sample)
-layNum = 7 #4 barrel+3 endcap. the numeration is 1-4 for barrel, 5-7 for endcap (cannot be changed without chaning the training sample).
+layNum = 7 ## 4 for barrel, for endcap use layNum = 7 #4 barrel+3 endcap. the numeration is 1-4 for barrel, 5-7 for endcap (cannot be changed without chaning the training sample).
 parNum=5 #number of track parameters (cannot be changed without chaning the training sample)
 _Epsilon = 1e-7 #value needed for the loss functione valuation
-inputModuleName="DeepCoreNtuplizerTest"
-inputTreeName="DeepCoreNtuplizerTree"
+inputModuleName= "DeepCoreNtuplizerTest" ## demo" ##"DeepCoreNtuplizerTest"
+inputTreeName= "DeepCoreNtuplizerTree" ##"NNClustSeedInputSimHitTree" ##"DeepCoreNtuplizerTree"
 # inputModuleName="demo" #2017 ntuples have this name
 # inputTreeName="NNClustSeedInputSimHitTree" #2017 ntuples have this name
 
 # traing parameter configuration
 batch_size = 64 # Batch size for training.
-epochs = 3 # Number of epochs to train for.
+epochs = 30 # Number of epochs to train for.
 start_epoch = 0 #starting epoch, to restart with proper numbering used when CONTINUE_TRAINING=True
 valSplit=0.2 # fraction of input used for validation
 prob_thr =0.85 # threshold to identfy good prediciton (see DeepCore documentation to details)
@@ -496,6 +498,7 @@ if(LOCAL_INPUT) : #loaded the local input
     tfile = uproot.open(input_name)
     tree = tfile[inputModuleName][inputTreeName]
     tree = tfile[inputModuleName][inputTreeName]
+    ##print(tree)
     input_ = tree.array("cluster_measured")
     input_jeta = tree.array("jet_eta")
     input_jpt = tree.array("jet_pt")
@@ -653,12 +656,12 @@ if TRAIN :
     if CONTINUE_TRAINING :
         
         #Barrel training (used in presentation, CMSSW PR...)
-        # model.load_weights('../data/DeepCore_barrel_weights.246-0.87.hdf5')
+        model.load_weights('data/DeepCore_barrel_weights.246-0.87.hdf5')
         
         #EndCap training, last weights (not satisfactory, consider to restart)
         # model.load_weights('../data/DeepCore_ENDCAP_train_ep150.h5')
         
-        model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=start_epoch))
+       # model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=start_epoch))
     else : #restart training
         start_epoch = 0
     
@@ -749,11 +752,11 @@ if PREDICT :
 
     if not TRAIN : #must be loaded previously produced weights, otherwise if you predict on the same sample of the training not needed
         #Barrel training (used in presentation, CMSSW PR...)
-        #model.load_weights('DeepCore_barrel_weights.246-0.87.hdf5')
-
+        ## model.load_weights('data/DeepCore_barrel_weights.246-0.87.hdf5')
+        model.load_weights('../Training_1019_9k/Deepcore_train_weights1019.h5')
         #EndCap training, last weights (not satisfactory, consider to restart)      
         # model.load_weights('DeepCore_ENDCAP_train_ep150.h5')
-        model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=epochs+start_epoch)) 
+        #model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=epochs+start_epoch)) 
 
     [validation_par,validation_prob] = model.predict([input_,input_jeta,input_jpt])
     validation_par = np.float64(validation_par)
