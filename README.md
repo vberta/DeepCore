@@ -97,3 +97,76 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - [] other missing stuff?
 
 -->
+
+# DeepCore Updated
+
+## Set Up Instructions
+- Set the appropriate architecture:
+   - setenv SCRAM_ARCH slc6_amd64_gcc700
+   - You can check which architecture you're using with: echo $SCRAM_ARCH
+- cmsrel CMSSW_10_2_5
+- cd CMSSW_10_2_5/src/
+- git clone https://github.com/bouchamaouihichem/DeepCore.git
+- Compiling: scram b -j 8
+- cd DeepCore/
+- cmsenv
+
+## Running Deepcore Training Locally
+- cd to Deepcore directory
+- make directory for training and cd there:
+	- mkdir TrainingLocal1019
+	- cd TrainingLocal1019
+- locate training sample: /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root 
+- python ../training/DeepCore.py --training --input /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root 
+
+## Running DeepCore Training using GPUs:
+- ssh to gpu machine using: ssh hichemb@cmslpcgpu1.fnal.gov -Y (1, 2 or 3)
+- Locate training samples after running Ntuplizer and divide them in Training and Validation samples: ls /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root -lrth
+- Make a directory in gpu scracth area (beware: files there are automatically deleted afer 30 days) using: mkdir /storage/local/data1/gpuscratch/hichemb/ 
+	- You can look for it using:  /usr/bin/find /storage/local/data1/gpuscratch
+	- Check that the space is not full using: df -H
+- Use tar to copy DeepCore directory (that you set up somewhere else) to gpuscratch directory:
+   - cd nobackup/princeton/project2/CMSSW_10_2_5/src/
+   - tar -zcvf DeepCore.tar *
+   - cd /storage/local/data1/gpuscratch/hichemb/
+   - tar -xf /uscms_data/d3/hichemb/princeton/project2/CMSSW_10_2_5/src/DeepCore.tar
+- Make a new directory for the training, copy training sample and run the training: 
+   - mkdir Training1103
+	- cd Training1103
+	- cp /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root .
+	- This command open the singularity image you use to run on Fermilab GPUs: 
+	   - singularity run --nv --bind `readlink $HOME` --bind `readlink -f ${HOME}/nobackup/` --bind /cvmfs --bind /storage/local/data1/gpuscratch/hichemb/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/fnallpc/fnallpc-docker:tensorflow-latest-gpu-singularity
+	   - For more details, check:
+	      - https://uscms.org/uscms_at_work/computing/setup/gpu.shtml
+	      - https://awesome-workshop.github.io/docker-singularity-hats/09-singularity/index.html
+	      - https://hub.docker.com/r/fnallpc/fnallpc-docker#use-instructions
+	- python ../DeepCore/training/DeepCore_GPU.py --training --input DeepCoreTrainingSample.root
+	   - To check if GPU is being used, open another window, ssh to the same machine and run: watch -n3 nvidia-smi
+	- exit singularity when training is done: exit
+	- The output is:
+	   - weights.01-33.19.hdf5 * number of epochs used, so 30 files for 30 epochs: These are the weights saved every batch
+		- DeepCore_train_ev5516.0_ep3.h5 : Weight file to be used for prediction, need to be hard-coded in DeepCore.py for prediction
+		- DeepCore_model_ev5516.0_ep3.h5 : Weight file to be used in CMSSW
+		- loss_file_ep3_ev5516.0.pdf : file with loss evolution
+	- Rename loss file to loss_file_Training1103.pdf 
+	- Delete weight files per epoch: rm weight*
+	- Rename model weight file to DeepCore_train_1103.h5
+- Copy training output outside of gpuscrath since files older than 30 days are automatically deleted:
+   - cp -r Training1103/ ~/nobackup/princeton/project2/CMSSW_10_2_5/src/DeepCore/
+   - Don't copy the training sample
+
+## Running DeepCore Validation (locally, no GPUs required)
+- ssh to your regular machine.
+- Go to Training1103 directory and locate the Validation sample:
+   - cd ~/nobackup/princeton/project2/CMSSW_10_2_5/src/DeepCore/Training1107/
+	- ls /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreValidationSample.root 
+- Edit L756 in DeepCore.py to include model weight file (NOT DeepCore_GPU.py):
+	- vim ../training/DeepCore.py
+	- model.load_weights('../Training1103/Deepcore_train_1103.h5')
+- Run prediction command from Training1103 directory so the output is there: python ../training/DeepCore.py --input /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreValidationSample.root --predict --output
+- Output from validation:
+   - DeepCore_prediction_ev673.6.npz: returned by prediction, file used to make root and pdf files
+	- DeepCore_mapValidation_ev673.6.root: hit maps in root
+	- parameter_file_ev673.6.pdf: parameter file pdf
+- Rename parameter file to parameter_file_1103.pdf
+
