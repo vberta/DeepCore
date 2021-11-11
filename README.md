@@ -170,3 +170,48 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 	- parameter_file_ev673.6.pdf: parameter file pdf
 - Rename parameter file to parameter_file_1103.pdf
 
+# Ntuplizer Updated
+
+## Ntuplizer Updated Repo: https://github.com/bouchamaouihichem/cmssw/tree/CMSSW_12_0_0_pre4_DeepCore_H/RecoTracker/DeepCoreTraining
+
+## Set Up Instructions
+- ```cmsrel CMSSW_12_0_0_pre4```
+- ```cd CMSSW_12_0_0_pre4/```
+- ```cmsenv```
+- ```git cms-init```
+- ``` git remote add -f Hichem https://github.com/bouchamaouihichem/cmssw.git ```
+- ```git checkout Hichem/CMSSW_12_0_0_pre4_DeepCore_H```
+- ```scram b -j 8```
+- ```cd RecoTracker/DeepCoreTraining/test/```
+
+## Running Ntuplizer Locally
+- Edit ```test_DeepCorePrepareInput.py	```
+	- edit in AODSIM file L35 and GEN-SIM/ GEN-SIM-DIGI-RAW files L39-41
+	- edit output filename if needed L60 but make sure it's the same input file name for ```test_DeepCoreNtuplizer.py ```
+- ```cmsRun test_DeepCorePrepareInput.py```
+ 	- Running this takes some time
+- Edit test_DeepCoreNtuplizer.py 
+	- Edit input file name in L23
+	- Edit output file name in L62
+- ```cmsRun test_DeepCoreNtuplizer.py ```
+- The output file may be used for DeepCore training or validation
+
+## Running Ntuplizer using crab jobs (recommended)
+- Edit ```test_DeepCorePrepareInput_crab.py```
+	- edit in AODSIM dataset L13 and GEN-SIM/ GEN-SIM-DIGI-RAW dataset L14
+	- edit number of jobs and units per jobs L29-30 depending on the number of events in the dataset
+- Submit crab job: ``` crab submit test_DeepCorePrepareInput_crab.py```
+- When your jobs are complete, you need to find the name of the dataset published in DBS. To do that you can look at the end of the crab.log file of the jobs you submitted:
+	- ```vim crab_projects/crab_DeepCorePrepareInput/crab.log```
+	- It looks something like this: ```/RelValQCD_Pt_1800_2400_14/hboucham-DeepCoreNtuplizerInput-6d87375326d3f4c3992ae44982f1a1bf/USER```
+- Edit ```test_DeepCoreNtuplizer_crab.py```
+	- edit input file name of the published job on DBS in L17
+- Submit crab job: ```crab submit test_DeepCoreNtuplizer_crab.py```
+- Once the crab job is complete, your files will be located in your eos directory and may be used for DeepCore training or validation
+
+
+
+
+
+
+
