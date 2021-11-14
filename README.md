@@ -29,6 +29,7 @@ It contains the script `DeepCore.py` which is the Neural Network itself. Is prim
 ### Extra - the ntuplizer
 The ntuplizer is a module of CMSSW, and build the proper input for the training of DeepCore. 
 - it is contained in this branch https://github.com/vberta/cmssw/tree/CMSSW_12_0_0_pre4_DeepCoreTraining
+- directory: RecoTracker/DeepCoreTracker
 - to obtain the ntuple two steps are needed (respective scripts contained in the `test` directory):
    1. `test_DeepCorePrepareInput.py` uses the two-file solution to combine AODSIM and GEN-SIM information and obtain a single .root file
    2. `test_DeepCoreNtuplizer.py` uses the file produced in the step 1 to build the ntuple
