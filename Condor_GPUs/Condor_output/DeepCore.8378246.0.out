@@ -1,0 +1,191 @@
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: uproot3 in /afs/cern.ch/user/h/hboucham/.local/lib/python3.6/site-packages (3.14.4)
+Requirement already satisfied: cachetools in /usr/local/lib/python3.6/dist-packages (from uproot3) (4.2.2)
+Requirement already satisfied: numpy>=1.13.1 in /usr/local/lib/python3.6/dist-packages (from uproot3) (1.19.5)
+Requirement already satisfied: awkward0 in /afs/cern.ch/user/h/hboucham/.local/lib/python3.6/site-packages (from uproot3) (0.15.5)
+Requirement already satisfied: uproot3-methods in /afs/cern.ch/user/h/hboucham/.local/lib/python3.6/site-packages (from uproot3) (0.10.1)
+WARNING: using local data (also for training!)
+loading data: start
+loading data: completed
+jetUps= (None, 30, 30, 2)
+NNinputs= (None, 30, 30, 7)
+ComplInput= (None, 30, 30, 9)
+Model: "model"
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to                     
+==================================================================================================
+input_1 (InputLayer)            [(None, 1)]          0                                            
+__________________________________________________________________________________________________
+input_2 (InputLayer)            [(None, 1)]          0                                            
+__________________________________________________________________________________________________
+concatenate (Concatenate)       (None, 2)            0           input_1[0][0]                    
+                                                                 input_2[0][0]                    
+__________________________________________________________________________________________________
+reshape (Reshape)               (None, 1, 1, 2)      0           concatenate[0][0]                
+__________________________________________________________________________________________________
+input_3 (InputLayer)            [(None, 30, 30, 7)]  0                                            
+__________________________________________________________________________________________________
+up_sampling2d (UpSampling2D)    (None, 30, 30, 2)    0           reshape[0][0]                    
+__________________________________________________________________________________________________
+concatenate_1 (Concatenate)     (None, 30, 30, 9)    0           input_3[0][0]                    
+                                                                 up_sampling2d[0][0]              
+__________________________________________________________________________________________________
+conv2d (Conv2D)                 (None, 30, 30, 50)   22100       concatenate_1[0][0]              
+__________________________________________________________________________________________________
+conv2d_1 (Conv2D)               (None, 30, 30, 20)   25020       conv2d[0][0]                     
+__________________________________________________________________________________________________
+conv2d_2 (Conv2D)               (None, 30, 30, 20)   10020       conv2d_1[0][0]                   
+__________________________________________________________________________________________________
+conv2d_3 (Conv2D)               (None, 30, 30, 18)   9018        conv2d_2[0][0]                   
+__________________________________________________________________________________________________
+conv2d_4 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_3[0][0]                   
+__________________________________________________________________________________________________
+conv2d_5 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_4[0][0]                   
+__________________________________________________________________________________________________
+conv2d_9 (Conv2D)               (None, 30, 30, 12)   1956        conv2d_4[0][0]                   
+__________________________________________________________________________________________________
+conv2d_6 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_5[0][0]                   
+__________________________________________________________________________________________________
+conv2d_10 (Conv2D)              (None, 30, 30, 9)    981         conv2d_9[0][0]                   
+__________________________________________________________________________________________________
+conv2d_7 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_6[0][0]                   
+__________________________________________________________________________________________________
+conv2d_11 (Conv2D)              (None, 30, 30, 7)    574         conv2d_10[0][0]                  
+__________________________________________________________________________________________________
+conv2d_8 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_7[0][0]                   
+__________________________________________________________________________________________________
+conv2d_12 (Conv2D)              (None, 30, 30, 6)    384         conv2d_11[0][0]                  
+__________________________________________________________________________________________________
+reshape_1 (Reshape)             (None, 30, 30, 3, 6) 0           conv2d_8[0][0]                   
+__________________________________________________________________________________________________
+reshape_2 (Reshape)             (None, 30, 30, 3, 2) 0           conv2d_12[0][0]                  
+==================================================================================================
+Total params: 84,723
+Trainable params: 84,723
+Non-trainable params: 0
+__________________________________________________________________________________________________
+total number of events = 4842.400000000001
+total number of events validation= 1210.6000000000001
+Number of Steps= 75.66250000000001
+training: start
+Epoch 1/30
+76/76 - 8s - loss: 26.7504 - reshape_1_loss: 17.5761 - reshape_2_loss: 9.1743 - val_loss: 26.8245 - val_reshape_1_loss: 17.6505 - val_reshape_2_loss: 9.1741
+
+Epoch 00001: saving model to weights.01-26.82.hdf5
+Epoch 2/30
+76/76 - 1s - loss: 26.7064 - reshape_1_loss: 17.5726 - reshape_2_loss: 9.1337 - val_loss: 26.7814 - val_reshape_1_loss: 17.6453 - val_reshape_2_loss: 9.1361
+
+Epoch 00002: saving model to weights.02-26.78.hdf5
+Epoch 3/30
+76/76 - 1s - loss: 26.6577 - reshape_1_loss: 17.5621 - reshape_2_loss: 9.0956 - val_loss: 26.7386 - val_reshape_1_loss: 17.6401 - val_reshape_2_loss: 9.0985
+
+Epoch 00003: saving model to weights.03-26.74.hdf5
+Epoch 4/30
+76/76 - 1s - loss: 26.6239 - reshape_1_loss: 17.5624 - reshape_2_loss: 9.0616 - val_loss: 26.6957 - val_reshape_1_loss: 17.6351 - val_reshape_2_loss: 9.0606
+
+Epoch 00004: saving model to weights.04-26.70.hdf5
+Epoch 5/30
+76/76 - 1s - loss: 26.5713 - reshape_1_loss: 17.5516 - reshape_2_loss: 9.0197 - val_loss: 26.6524 - val_reshape_1_loss: 17.6303 - val_reshape_2_loss: 9.0222
+
+Epoch 00005: saving model to weights.05-26.65.hdf5
+Epoch 6/30
+76/76 - 1s - loss: 26.5389 - reshape_1_loss: 17.5547 - reshape_2_loss: 8.9842 - val_loss: 26.6089 - val_reshape_1_loss: 17.6257 - val_reshape_2_loss: 8.9832
+
+Epoch 00006: saving model to weights.06-26.61.hdf5
+Epoch 7/30
+76/76 - 1s - loss: 26.4948 - reshape_1_loss: 17.5518 - reshape_2_loss: 8.9430 - val_loss: 26.5662 - val_reshape_1_loss: 17.6207 - val_reshape_2_loss: 8.9455
+
+Epoch 00007: saving model to weights.07-26.57.hdf5
+Epoch 8/30
+76/76 - 1s - loss: 26.4382 - reshape_1_loss: 17.5364 - reshape_2_loss: 8.9018 - val_loss: 26.5241 - val_reshape_1_loss: 17.6153 - val_reshape_2_loss: 8.9089
+
+Epoch 00008: saving model to weights.08-26.52.hdf5
+Epoch 9/30
+76/76 - 1s - loss: 26.4053 - reshape_1_loss: 17.5357 - reshape_2_loss: 8.8697 - val_loss: 26.4815 - val_reshape_1_loss: 17.6099 - val_reshape_2_loss: 8.8716
+
+Epoch 00009: saving model to weights.09-26.48.hdf5
+Epoch 10/30
+76/76 - 1s - loss: 26.3679 - reshape_1_loss: 17.5347 - reshape_2_loss: 8.8332 - val_loss: 26.4362 - val_reshape_1_loss: 17.6057 - val_reshape_2_loss: 8.8305
+
+Epoch 00010: saving model to weights.10-26.44.hdf5
+Epoch 11/30
+76/76 - 1s - loss: 26.3090 - reshape_1_loss: 17.5288 - reshape_2_loss: 8.7802 - val_loss: 26.3852 - val_reshape_1_loss: 17.6035 - val_reshape_2_loss: 8.7817
+
+Epoch 00011: saving model to weights.11-26.39.hdf5
+Epoch 12/30
+76/76 - 1s - loss: 26.2688 - reshape_1_loss: 17.5321 - reshape_2_loss: 8.7367 - val_loss: 26.3302 - val_reshape_1_loss: 17.6041 - val_reshape_2_loss: 8.7262
+
+Epoch 00012: saving model to weights.12-26.33.hdf5
+Epoch 13/30
+76/76 - 1s - loss: 26.2047 - reshape_1_loss: 17.5273 - reshape_2_loss: 8.6774 - val_loss: 26.2761 - val_reshape_1_loss: 17.6067 - val_reshape_2_loss: 8.6694
+
+Epoch 00013: saving model to weights.13-26.28.hdf5
+Epoch 14/30
+76/76 - 1s - loss: 26.1499 - reshape_1_loss: 17.5363 - reshape_2_loss: 8.6136 - val_loss: 26.2127 - val_reshape_1_loss: 17.6127 - val_reshape_2_loss: 8.6000
+
+Epoch 00014: saving model to weights.14-26.21.hdf5
+Epoch 15/30
+76/76 - 1s - loss: 26.0860 - reshape_1_loss: 17.5463 - reshape_2_loss: 8.5397 - val_loss: 26.1352 - val_reshape_1_loss: 17.6221 - val_reshape_2_loss: 8.5132
+
+Epoch 00015: saving model to weights.15-26.14.hdf5
+Epoch 16/30
+76/76 - 1s - loss: 26.0036 - reshape_1_loss: 17.5599 - reshape_2_loss: 8.4437 - val_loss: 26.0322 - val_reshape_1_loss: 17.6361 - val_reshape_2_loss: 8.3961
+
+Epoch 00016: saving model to weights.16-26.03.hdf5
+Epoch 17/30
+76/76 - 1s - loss: 25.9002 - reshape_1_loss: 17.5743 - reshape_2_loss: 8.3259 - val_loss: 25.9365 - val_reshape_1_loss: 17.6485 - val_reshape_2_loss: 8.2880
+
+Epoch 00017: saving model to weights.17-25.94.hdf5
+Epoch 18/30
+76/76 - 1s - loss: 25.8070 - reshape_1_loss: 17.5833 - reshape_2_loss: 8.2236 - val_loss: 25.8520 - val_reshape_1_loss: 17.6585 - val_reshape_2_loss: 8.1935
+
+Epoch 00018: saving model to weights.18-25.85.hdf5
+Epoch 19/30
+76/76 - 1s - loss: 25.7226 - reshape_1_loss: 17.5952 - reshape_2_loss: 8.1273 - val_loss: 25.7770 - val_reshape_1_loss: 17.6669 - val_reshape_2_loss: 8.1101
+
+Epoch 00019: saving model to weights.19-25.78.hdf5
+Epoch 20/30
+76/76 - 1s - loss: 25.6518 - reshape_1_loss: 17.5981 - reshape_2_loss: 8.0538 - val_loss: 25.7102 - val_reshape_1_loss: 17.6735 - val_reshape_2_loss: 8.0366
+
+Epoch 00020: saving model to weights.20-25.71.hdf5
+Epoch 21/30
+76/76 - 1s - loss: 25.5942 - reshape_1_loss: 17.6118 - reshape_2_loss: 7.9824 - val_loss: 25.6507 - val_reshape_1_loss: 17.6787 - val_reshape_2_loss: 7.9720
+
+Epoch 00021: saving model to weights.21-25.65.hdf5
+Epoch 22/30
+76/76 - 1s - loss: 25.5420 - reshape_1_loss: 17.6165 - reshape_2_loss: 7.9255 - val_loss: 25.5969 - val_reshape_1_loss: 17.6830 - val_reshape_2_loss: 7.9139
+
+Epoch 00022: saving model to weights.22-25.60.hdf5
+Epoch 23/30
+76/76 - 1s - loss: 25.4858 - reshape_1_loss: 17.6155 - reshape_2_loss: 7.8703 - val_loss: 25.5503 - val_reshape_1_loss: 17.6855 - val_reshape_2_loss: 7.8648
+
+Epoch 00023: saving model to weights.23-25.55.hdf5
+Epoch 24/30
+76/76 - 1s - loss: 25.4398 - reshape_1_loss: 17.6164 - reshape_2_loss: 7.8235 - val_loss: 25.5093 - val_reshape_1_loss: 17.6868 - val_reshape_2_loss: 7.8225
+
+Epoch 00024: saving model to weights.24-25.51.hdf5
+Epoch 25/30
+76/76 - 1s - loss: 25.4025 - reshape_1_loss: 17.6176 - reshape_2_loss: 7.7849 - val_loss: 25.4722 - val_reshape_1_loss: 17.6871 - val_reshape_2_loss: 7.7850
+
+Epoch 00025: saving model to weights.25-25.47.hdf5
+Epoch 26/30
+76/76 - 1s - loss: 25.3674 - reshape_1_loss: 17.6205 - reshape_2_loss: 7.7469 - val_loss: 25.4382 - val_reshape_1_loss: 17.6865 - val_reshape_2_loss: 7.7517
+
+Epoch 00026: saving model to weights.26-25.44.hdf5
+Epoch 27/30
+76/76 - 1s - loss: 25.3472 - reshape_1_loss: 17.6234 - reshape_2_loss: 7.7238 - val_loss: 25.4072 - val_reshape_1_loss: 17.6847 - val_reshape_2_loss: 7.7226
+
+Epoch 00027: saving model to weights.27-25.41.hdf5
+Epoch 28/30
+76/76 - 1s - loss: 25.3041 - reshape_1_loss: 17.6152 - reshape_2_loss: 7.6889 - val_loss: 25.3792 - val_reshape_1_loss: 17.6815 - val_reshape_2_loss: 7.6977
+
+Epoch 00028: saving model to weights.28-25.38.hdf5
+Epoch 29/30
+76/76 - 1s - loss: 25.2836 - reshape_1_loss: 17.6117 - reshape_2_loss: 7.6719 - val_loss: 25.3534 - val_reshape_1_loss: 17.6771 - val_reshape_2_loss: 7.6763
+
+Epoch 00029: saving model to weights.29-25.35.hdf5
+Epoch 30/30
+76/76 - 1s - loss: 25.2677 - reshape_1_loss: 17.6119 - reshape_2_loss: 7.6558 - val_loss: 25.3296 - val_reshape_1_loss: 17.6717 - val_reshape_2_loss: 7.6579
+
+Epoch 00030: saving model to weights.30-25.33.hdf5
+training: completed
