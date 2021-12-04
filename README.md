@@ -119,7 +119,7 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - locate training sample: ``` ls /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root ```
 - ```python ../training/DeepCore.py --training --input /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root ```
 
-## Running DeepCore Training using GPUs:
+## Running DeepCore Training using Fermilab GPUs:
 - ssh to gpu machine using: ```ssh hichemb@cmslpcgpu1.fnal.gov -Y``` (1, 2 or 3)
 - Locate training samples after running Ntuplizer and divide them in Training and Validation samples: ```ls /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root -lrth ```
 - Make a directory in gpu scracth area (beware: files there are automatically deleted afer 30 days) using: ```mkdir /storage/local/data1/gpuscratch/hichemb/ ```
@@ -154,6 +154,20 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - Copy training output outside of gpuscrath since files older than 30 days are automatically deleted:
    - ```cp -r Training1103/ ~/nobackup/princeton/project2/CMSSW_10_2_5/src/DeepCore/```
    - Don't copy the training sample
+
+## Running DeepCore Training using CERN GPUs:
+- cd to your DeepCore directory on lxplus
+- Make Training folder for output and move training file there:
+	- ```mkdir Training1204```
+	- ```cp DeepCoreTrainingSample.root Training1204/DeepCoreTrainingSample.root```
+- ```cd Condor_GPUs```
+- Adjust directory in Condor_DeepCore.sh and compile: ```chmod +x Condor_DeepCore.sh```
+- Adjust number of GPU/CPU required in Condor_DeepCore.sub 
+- Submit jobs and monitor progress:
+	- ```condor_submit Condor_DeepCore.sub```
+	- ```condor_q```
+
+
 
 ## Running DeepCore Validation (locally, no GPUs required)
 - ssh to your regular machine.
