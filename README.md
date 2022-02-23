@@ -134,6 +134,7 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
    - ```mkdir Training1103```
 	- ```cd Training1103```
 	- ```cp /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreTrainingSample.root .```
+	- If your training sample is too big (you will run into memory issues), you need to use the Generator to use a central sample. This means you will open each file as you're training DeepCore. You will need to manually split your files into training and validation (not testing!) and you will need to specify the path for the training files directory and the validation files directory in DeepCore_GPU.py. You should still be able to run validation using your testing sample without using the Generator (it can handle at least 150k testing inputs), though you need to be in the gpu scratch directory to have enough memory.
 	- This command open the singularity image you use to run on Fermilab GPUs: 
 	   - ```singularity run --nv --bind `readlink $HOME` --bind `readlink -f ${HOME}/nobackup/` --bind /cvmfs --bind /storage/local/data1/gpuscratch/hichemb/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/fnallpc/fnallpc-docker:tensorflow-latest-gpu-singularity```
 	   - For more details, check:
@@ -141,7 +142,10 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 	      - https://awesome-workshop.github.io/docker-singularity-hats/09-singularity/index.html
 	      - https://hub.docker.com/r/fnallpc/fnallpc-docker#use-instructions
 	- ```python ../DeepCore/training/DeepCore_GPU.py --training --input DeepCoreTrainingSample.root```
-	  	- To check if GPU is being used, open another window, ssh to the same machine and run: ```watch -n3 nvidia-smi```
+	  	- To check if GPU is being used, open another window, ssh to the same machine, find your process using ```top``` to locate the Process ID (PID) and run: ```watch -n3 nvidia-smi```. One of the processes running on the GPU should have a matching PID to yours
+	-  if using the generator, in which case the training sample is the central sample (so no need to specify a local input using --input), you should run this command, which will also run the training in the background and pipe print outs to a log file:
+		- ```§ nohup python ../DeepCore/training/DeepCore_GPU.py --training  > Training0217.log &```
+		- To kill the training, you can find your process using ```top``` to locate the Process ID (PID) then ```kill -9 'PID'```
 	- exit singularity when training is done: ```exit```
 	- The output is:
 	  	- weights.01-33.19.hdf5 * number of epochs used, so 30 files for 30 epochs: These are the weights saved every batch
@@ -154,6 +158,10 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - Copy training output outside of gpuscrath since files older than 30 days are automatically deleted:
    - ```cp -r Training1103/ ~/nobackup/princeton/project2/CMSSW_10_2_5/src/DeepCore/```
    - Don't copy the training sample
+- I you need to add more epochs to your training, you may use the arguments --continueTraining to indicate that you are continuing a previous training, --epochs to specify the number of epochs, --epochsstart to specify from which epoch you're continuing and --weights to specify which weight file to use to continue training
+	- e.g: to continue training from 20 epochs and adding 30 epochs, I would use the following command: ```python ../DeepCore/training/DeepCore_GPU.py --training --continueTraining --input DeepCoreTrainingSample.root --epochsstart 20 --weights weights.20-5.81.hdf5 --epochs 30```
+
+
 
 ## Running DeepCore Training using CERN GPUs:
 - cd to your DeepCore directory on lxplus
@@ -178,6 +186,13 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 	- ```vim ../training/DeepCore.py```
 	- model.load_weights('../Training1103/Deepcore_train_1103.h5')
 - Run prediction command from Training1103 directory so the output is there: ```python ../training/DeepCore.py --input /eos/uscms/store/user/hichemb/RelValQCD_Pt_1800_2400_14/DeepCoreTrainingSample/211017_181642/0000/DeepCoreValidationSample.root --predict --output```
+- If your run into memory issues loading the validation sample:
+	- ssh to the gpu server where you ran your training and copy your testing file to Training1103
+	- Since running validation requires a cmssw environment do the following:
+	- ```cd ~/nobackup/princeton/project2/CMSSW_10_2_5/src/DeepCore/Training1107/```
+	- ```cmsenv``` 
+	- cd back to Training1103 directory in gpu scratch
+	- Now you may run validation using the same command: ```python ../training/DeepCore.py --input DeepCoreTestingSample.root --predict --output```
 - Output from validation:
   	- DeepCore_prediction_ev673.6.npz: returned by prediction, file used to make root and pdf files
 	- DeepCore_mapValidation_ev673.6.root: hit maps in root
@@ -189,6 +204,7 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 ## Ntuplizer Updated Repo: https://github.com/bouchamaouihichem/cmssw/tree/CMSSW_12_0_0_pre4_DeepCore_H/RecoTracker/DeepCoreTraining
 
 ## Set Up Instructions
+- Make sure you're using the same CMSSW version as your dataset
 - ```cmsrel CMSSW_12_0_0_pre4```
 - ```cd CMSSW_12_0_0_pre4/```
 - ```cmsenv```
@@ -197,6 +213,17 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - ```git checkout Hichem/CMSSW_12_0_0_pre4_DeepCore_H```
 - ```scram b -j 8```
 - ```cd RecoTracker/DeepCoreTraining/test/```
+- To set up a new CMSSW release to run the Ntuplizer on a dataset with the same CMSSW version:
+	- ```cmsrel CMSSW_12_1_1```
+	- ```cd CMSSW_12_1_1/src/```
+	- ```scram b -j 8 ```
+	- ```cmsenv```
+	- ```git cms-addpkg RecoTracker```
+	- ```cd RecoTracker/```
+	- copy Ntuplizer folder from other CMSSW release directory: ```cp -r ~/nobackup/princeton/project2/CMSSW_12_0_0_pre4/src/RecoTracker/DeepCoreTraining/```
+	-```cd .. (to src)```
+	-```scram b -j 8```
+
 
 ## Running Ntuplizer Locally
 - Edit ```test_DeepCorePrepareInput.py	```
@@ -211,9 +238,13 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - The output file may be used for DeepCore training or validation
 
 ## Running Ntuplizer using crab jobs (recommended)
+- ```voms-proxy-init --voms cms```
 - Edit ```test_DeepCorePrepareInput_crab.py```
 	- edit in AODSIM dataset L13 and GEN-SIM/ GEN-SIM-DIGI-RAW dataset L14
 	- edit number of jobs and units per jobs L29-30 depending on the number of events in the dataset
+	- If you want to use your own eos space to host the intermediate files:
+		- comment out this line ```config.Data.outLFNDirBase = '/store/group/phys_tracking/Hichemb/DeepCoreNtuplizer/'```
+		- replace site ```T2_CH_CERN``` by ```T3_US_FNALLPC```
 - Submit crab job: ``` crab submit test_DeepCorePrepareInput_crab.py```
 - When your jobs are complete, you need to find the name of the dataset published in DBS. To do that you can look at the end of the crab.log file of the jobs you submitted:
 	- ```vim crab_projects/crab_DeepCorePrepareInput/crab.log```
@@ -221,7 +252,7 @@ _DeepCore_ NN developing (python script, based on Keras-Tensorflow).
 - Edit ```test_DeepCoreNtuplizer_crab.py```
 	- edit input file name of the published job on DBS in L17
 - Submit crab job: ```crab submit test_DeepCoreNtuplizer_crab.py```
-- Once the crab job is complete, your files will be located in your eos directory and may be used for DeepCore training or validation
+- Once the crab job is complete, your files will be located in your eos directory and may be used for DeepCore training and validation
 
 
 
