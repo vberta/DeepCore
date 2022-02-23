@@ -39,6 +39,10 @@ from  matplotlib import pyplot as plt
 import pylab
 import glob
 
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(gpus[0], True)
+
 #################################################################################################################################################################################################################################################################################
 ##
 ##     USAGE
@@ -71,6 +75,14 @@ parser.add_argument('--testSampleBuild',        dest='testSampleBuild',         
 parser.add_argument('--extraValidation',        dest='extraValidation',         action='store_const',   const=True, default=False,           help='extra validation plot during training (very time consuming callback!)')
 parser.add_argument('--rgb',                    dest='rgb',                     action='store_const',   const=True, default=False,           help='RGB color scheme plots (used in all the presented results')
 
+## Adding new parser options
+## passing number of epochs for training from command line rather than hard code
+parser.add_argument('--epochs',                  dest='Epochs',    action='store',                     default=0,  type=int,   help=' Number of epochs to use for training')
+## passing weight file from which to continue training from command line rather than hard code
+parser.add_argument('--weights',                  dest='Weights',    action='store',                     default='',  type=str,   help='name of the local weight file, if missing use hardcoded one')
+## passing epoch form which previous weight file stopped at so epoch numbering is correct
+parser.add_argument('--epochsstart',                  dest='EpochsStart',    action='store',                     default=0,  type=int,   help=' Number of epochs to use for training')
+
 args = parser.parse_args()
 
 OUTPUT = args.Output
@@ -87,6 +99,10 @@ TEST_SAMPLE_BUILD = args.testSampleBuild
 EXTRA_VALIDATION = args.extraValidation
 RGB = args.rgb
 
+## new args
+EPOCHS_USED = args.Epochs
+WEIGHTS_CONTINUE = args.Weights
+EPOCHS_CONTINUE =args.EpochsStart
 #------------------------------------------------------------------------------------------#
 #----------------------------- INTERNAL CONFIGURATION PARAMETERS --------------------------#
 #------------------------------------------------------------------------------------------#
@@ -111,8 +127,16 @@ inputTreeName= "DeepCoreNtuplizerTree" ##"NNClustSeedInputSimHitTree" ##"DeepCor
 
 # traing parameter configuration
 batch_size = 64 # Batch size for training.
-epochs = 30 # Number of epochs to train for.
-start_epoch = 0 #starting epoch, to restart with proper numbering used when CONTINUE_TRAINING=True
+#batch_size = 1 # Batch size for training.
+## changed to use number of epochs provided by command line, otehrwise use hardcoded number
+if EPOCHS_USED:
+  epochs = EPOCHS_USED
+else:
+  epochs = 2 # Number of epochs to train for.
+if EPOCHS_CONTINUE:
+  start_epoch = EPOCHS_CONTINUE
+else:
+  start_epoch = 0 #starting epoch, to restart with proper numbering used when CONTINUE_TRAINING=True
 valSplit=0.2 # fraction of input used for validation
 prob_thr =0.85 # threshold to identfy good prediciton (see DeepCore documentation to details)
 
@@ -311,12 +335,16 @@ def loss_mse_select_clipped(y_true, y_pred) :
     return tf.reduce_sum(out, axis=None)/(tf.reduce_sum(wei,axis=None)*5+0.00001) #5=parNum
 
 # Generator used to load all the input file in the LOCAL_INPUT=False workflow
+## Changed uproot to uproot3 in order to use central sample
+## debugging comments included below to check that generator is working correctly
 def Generator(files) :
-    while 1:
+     while 1:
+        #print("entering while loop")
         for f in files :
-            import uproot
-            tfile = uproot.open(f)
-
+            import uproot3
+            #print("opening file")
+            tfile = uproot3.open(f)
+            #print(f)
             tree = tfile[inputModuleName][inputTreeName]
             input_ = tree.array("cluster_measured")
             input_jeta = tree.array("jet_eta")
@@ -328,8 +356,8 @@ def Generator(files) :
             nev = len(target_prob)
             target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,overlapNum,1))
             target_prob = concatenatenp([target_prob,wei],axis=4)
-
-            for k in range(len(input_jeta)/batch_size) :
+           # print(len(input_jeta),batch_size, len(input_jeta)/batch_size)
+            for k in range(int(len(input_jeta)/batch_size)) :
                 yield [input_[batch_size*(k):batch_size*(k+1)],input_jeta[batch_size*(k):batch_size*(k+1)],input_jpt[batch_size*(k):batch_size*(k+1)]], [target_[batch_size*(k):batch_size*(k+1)],target_prob[batch_size*(k):batch_size*(k+1)]]
 
 # linear propagation to the 4 barrel layers, with plotting purpose only
@@ -520,8 +548,11 @@ else :  #loaded the central input
     #---------------- central input  ----------------#
 
     #barrel full stat
-    files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
-    files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
+    ## files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
+   ## files=glob.glob('/storage/local/data1/gpuscratch/hichemb/XTraining0211/DeepCoreTrainingSample.root')
+    files=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample*.root')
+    files_validation=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample*.root')
+    #files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
 
     #barrel small stat
     # files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8/NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple_simHit_1LayClustPt_cutPt_9*.root')
@@ -607,7 +638,6 @@ if TRAIN or PREDICT :
     reshaped_prob = Reshape((jetDim,jetDim,overlapNum,2))(conv1_3_1)
 
     model = Model([NNinputs,NNinputs_jeta,NNinputs_jpt],[reshaped,reshaped_prob])
-    
     anubi = keras.optimizers.Adam(lr=0.00000001)#after epochs 252 (with septs/20 and batch_size 64)
 
     model.compile(optimizer=anubi, loss=[loss_mse_select_clipped,loss_ROIsoft_crossentropy], loss_weights=[1,1])
@@ -650,7 +680,6 @@ jetNum_validation = tot_events_validation
 print("total number of events =", jetNum)
 print("total number of events validation=", jetNum_validation)
 
-
 checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=False)
 
 if TRAIN :
@@ -658,7 +687,10 @@ if TRAIN :
     print("Number of Steps=",stepNum)
     
     if CONTINUE_TRAINING :
-        
+       ## Using weight file given from command line otherwise use hardcode weight file 
+       if WEIGHTS_CONTINUE:
+         model.load_weights(WEIGHTS_CONTINUE)
+       else:
         #Barrel training (used in presentation, CMSSW PR...)
         model.load_weights('data/DeepCore_barrel_weights.246-0.87.hdf5')
         
@@ -681,7 +713,8 @@ if TRAIN :
         else :
             history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs+start_epoch, verbose = 2, validation_split=valSplit,  initial_epoch=start_epoch, callbacks=[checkpointer])            
     else : #full standard training
-        history  = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum/20, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, initial_epoch=start_epoch, callbacks=[checkpointer])
+        ## chaning steps_per_epoch=stepNum/20 to steps_per_epoch=stepNum
+        history = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, initial_epoch=start_epoch, callbacks=[checkpointer])
         
     model.save_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
     model.save('DeepCore_model_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
@@ -689,8 +722,9 @@ if TRAIN :
     print("training: completed")
 
 
-    #plot of the losses ----------------
-    pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_ev{ev}.pdf".format( Epoch=epochs,ev=jetNum))
+    #plot of the losses ---------------
+    ## added start_epoch so loss file shows overall number of epochs
+    pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_ev{ev}.pdf".format(Epoch=epochs+start_epoch,ev=jetNum))
 
     if(not DEB1EV) :
         plt.figure(1000)
@@ -718,6 +752,8 @@ if TRAIN :
         ## Can't find reshape_3_loss in the training, only reshape 1 and
         ## 2 availabe so we changed reshape_2 -> reshape_1 and reshape_3 ->
         ## reshape_2
+        ## reshape_1 refers to model parameter loss, which is using the clipped  mean square error as a loss function for jet parameter (eta, pt..etc)
+        ## reshape_2 refers to model probability loss, which is using a weighted binary cross entroy as loss function for the TCP maps (pixel maps with x, y and charge deposit)
         plt.figure(1002)
         # plt.yscale('log')
         pylab.plot(history.history['reshape_2_loss'])
