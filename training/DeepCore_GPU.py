@@ -751,7 +751,7 @@ if TRAIN :
         ## chaning steps_per_epoch=stepNum/20 to steps_per_epoch=stepNum
         #history = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_
         
-        history = model.fit(Generator2(trainingpath,batch_size),steps_per_epoch=int(stepNum)/20, epochs=args.Epochs,use_multiprocessing=True,workers=5, verbose = 2, max_queue_size=5,  validation_data=Generator2(validationpath,batch_size),  validation_steps=int(jetNum_validation/batch_size), initial_epoch=start_epoch, callbacks=[checkpointer]) 
+        history = model.fit(Generator2(trainingpath,batch_size),steps_per_epoch=int(stepNum)/20, epochs=start_epoch+args.Epochs,use_multiprocessing=True,workers=5, verbose = 2, max_queue_size=5,  validation_data=Generator2(validationpath,batch_size),  validation_steps=int(jetNum_validation/batch_size), initial_epoch=start_epoch, callbacks=[checkpointer]) 
         print("done running; now save")
         
     model.save_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
