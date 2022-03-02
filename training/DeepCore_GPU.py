@@ -26,6 +26,7 @@ from keras.initializers import *
 from keras.callbacks import ModelCheckpoint
 
 
+
 import numpy as np
 from numpy import concatenate as concatenatenp
 
@@ -39,7 +40,8 @@ from  matplotlib import pyplot as plt
 import pylab
 import glob
 
-
+import uproot3
+import uproot
 gpus = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(gpus[0], True)
 
@@ -337,6 +339,8 @@ def loss_mse_select_clipped(y_true, y_pred) :
 # Generator used to load all the input file in the LOCAL_INPUT=False workflow
 ## Changed uproot to uproot3 in order to use central sample
 ## debugging comments included below to check that generator is working correctly
+
+#OUTDATED! Doesn't run on all cycles
 def Generator(files) :
      while 1:
         #print("entering while loop")
@@ -359,6 +363,33 @@ def Generator(files) :
            # print(len(input_jeta),batch_size, len(input_jeta)/batch_size)
             for k in range(int(len(input_jeta)/batch_size)) :
                 yield [input_[batch_size*(k):batch_size*(k+1)],input_jeta[batch_size*(k):batch_size*(k+1)],input_jpt[batch_size*(k):batch_size*(k+1)]], [target_[batch_size*(k):batch_size*(k+1)],target_prob[batch_size*(k):batch_size*(k+1)]]
+
+#runs on cycles 1-8, automatic batching, uproot4
+def Generator2(filepath,batch_size=0,count=False):
+    if count:
+        branches = ["jet_eta"]
+        batch_size = 1000
+    else:
+        branches = ["cluster_measured","jet_eta","jet_pt","trackPar","trackProb"]
+
+    while 1:
+        for cycle in range(1,9):
+            print(cycle)
+            for chunk in uproot.iterate("{}:{}/{};{}".format(filepath,inputModuleName,inputTreeName,str(cycle)),branches,step_size=batch_size,library="np"):
+                if count:
+                    yield chunk['jet_eta'].shape[0]
+                else:
+                    nev = len(chunk["trackProb"])
+
+                    target_prob = np.reshape(chunk["trackProb"], (nev,jetDim,jetDim,overlapNum,1))
+
+                    target_prob = concatenatenp([target_prob,chunk["trackPar"][:,:,:,:,-1:]],axis=4)
+                    yield [chunk["cluster_measured"],chunk["jet_eta"],chunk["jet_pt"]],[chunk["trackPar"],target_prob]
+        if count:
+            break
+
+
+
 
 # linear propagation to the 4 barrel layers, with plotting purpose only
 def prop_on_layer(x1,y1,eta,phi,eta_jet,lay) :
@@ -464,7 +495,6 @@ def averageADC(input_) :
 # function called with  CHECK_SAMPLE=True
 def check_sample(files_input,files_input_validation) :
     #------ check nan/inf in the sample -------------#
-    import uproot
     print("checksample")
     print("number of  file=", len(files_input))
     for f in files_input :
@@ -526,7 +556,6 @@ if(LOCAL_INPUT) : #loaded the local input
     print("WARNING: using local data (also for training!)")
     print("loading data: start")
 
-    import uproot3
     tfile = uproot3.open(input_name)
     tree = tfile[inputModuleName][inputTreeName]
     tree = tfile[inputModuleName][inputTreeName]
@@ -548,10 +577,18 @@ else :  #loaded the central input
     #---------------- central input  ----------------#
 
     #barrel full stat
-    ## files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0001/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0002/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0003/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0005/ntuple*.root')
-   ## files=glob.glob('/storage/local/data1/gpuscratch/hichemb/XTraining0211/DeepCoreTrainingSample.root')
-    files=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample*.root')
-    files_validation=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample*.root')
+    ## files=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0000/ntuple*.root') + glob.glob('/gpfs/ddn/srm/cm
+    ## files=glob.glob('/storage/local/data1/gpuscratch/hichemb/XTraining0211/DeepCoreTrainingSample.root')
+    #files=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample*.root')
+    #files_validation=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample*.root')
+    #Generator2 approach
+    trainingpath = "/storage/local/data1/gpuscratch/njh/Training0217/training/DeepCoreTrainingSample_*.root"
+    validationpath = "/storage/local/data1/gpuscratch/njh/Training0217/validation/DeepCoreTrainingSample_*.root"
+    
+    #GPU3 training/validation files
+    #trainingpath = "/storage/local/data1/gpuscratch/njh/Training0217/training/DeepCoreTrainingSample_*.root:DeepCoreNtuplizerTest/DeepCoreNtuplizerTree;"
+    #validationpath = "/storage/local/data1/gpuscratch/njh/Training0217/validation/DeepCoreTrainingSample_*.root:DeepCoreNtuplizerTest/DeepCoreNtuplizerTree;"
+
     #files_validation=glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_46*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_47*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_48*.root')+glob.glob('/gpfs/ddn/srm/cms/store/user/vbertacc/NNClustSeedInputSimHit/QCD_Pt_1800to2400_TuneCUETP8M1_13TeV_pythia8//NNClustSeedInputSimHit_1LayClustPt_cutPt/190216_214452/0004/ntuple_simHit_1LayClustPt_cutPt_49*.root')
 
     #barrel small stat
@@ -638,9 +675,10 @@ if TRAIN or PREDICT :
     reshaped_prob = Reshape((jetDim,jetDim,overlapNum,2))(conv1_3_1)
 
     model = Model([NNinputs,NNinputs_jeta,NNinputs_jpt],[reshaped,reshaped_prob])
-    anubi = keras.optimizers.Adam(lr=0.00000001)#after epochs 252 (with septs/20 and batch_size 64)
+    anubi = keras.optimizers.Adam(lr=1e-8)#after epochs 252 (with septs/20 and batch_size 64)
 
-    model.compile(optimizer=anubi, loss=[loss_mse_select_clipped,loss_ROIsoft_crossentropy], loss_weights=[1,1])
+    #model.compile(optimizer=anubi, loss=[loss_mse_select_clipped,loss_ROIsoft_crossentropy], loss_weights=[1,1]) #FOR LATE TRAINING
+    model.compile(optimizer=anubi, loss=[loss_mse_select_clipped,loss_ROI_crossentropy], loss_weights=[1,1]) #FOR EARLY TRAINING
     model.summary()
 
 
@@ -651,7 +689,6 @@ if TRAIN or PREDICT :
 
 
 #evaluation of number of events used 
-import uproot3
 tot_events = 0
 tot_events_validation = 0
 if(LOCAL_INPUT) :
@@ -662,18 +699,15 @@ if(LOCAL_INPUT) :
     tot_events_validation=tot_events*valSplit
     tot_events=tot_events*(1-valSplit)
 else :
-    print("number of  file=", len(files))
-    print("number of file validation=", len(files_validation))
-    for f in files :
-        tfile = uproot3.open(f)
-        tree = tfile[inputModuleName][inputTreeName]
-        input_jeta2 = tree.array("jet_eta")
-        tot_events = tot_events+len(input_jeta2)
-    for f in files_validation :
-        tfile = uproot3.open(f)
-        tree = tfile[inputModuleName][inputTreeName]
-        input_jeta2 = tree.array("jet_eta")
-        tot_events_validation = tot_events_validation+len(input_jeta2)
+    print("number of  file=", len(glob.glob(trainingpath)))
+    print("number of file validation=", len(glob.glob(validationpath)))
+    for batch in Generator2(trainingpath,count=True):
+        #pdb.set_trace()
+        tot_events += batch
+
+    for batch in Generator2(validationpath,count=True):
+        tot_events_validation += batch
+
 
 jetNum = tot_events
 jetNum_validation = tot_events_validation
@@ -714,7 +748,10 @@ if TRAIN :
             history  = model.fit([input_,input_jeta,input_jpt], [target_,target_prob],  batch_size=batch_size, epochs=epochs+start_epoch, verbose = 2, validation_split=valSplit,  initial_epoch=start_epoch, callbacks=[checkpointer])            
     else : #full standard training
         ## chaning steps_per_epoch=stepNum/20 to steps_per_epoch=stepNum
-        history = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_size, initial_epoch=start_epoch, callbacks=[checkpointer])
+        #history = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_
+        
+        history = model.fit(Generator2(trainingpath,batch_size),steps_per_epoch=int(stepNum)/20, epochs=args.Epochs, verbose = 2, max_queue_size=5,  validation_data=Generator2(validationpath,batch_size),  validation_steps=int(jetNum_validation/batch_size), initial_epoch=start_epoch, callbacks=[checkpointer]) 
+        print("done running; now save")
         
     model.save_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
     model.save('DeepCore_model_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
