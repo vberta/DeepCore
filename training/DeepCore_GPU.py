@@ -25,8 +25,7 @@ from keras.optimizers import *
 from keras.initializers import *
 from keras.callbacks import ModelCheckpoint
 
-
-
+import pandas as pd
 import numpy as np
 from numpy import concatenate as concatenatenp
 
@@ -84,6 +83,8 @@ parser.add_argument('--epochs',                  dest='Epochs',    action='store
 parser.add_argument('--weights',                  dest='Weights',    action='store',                     default='',  type=str,   help='name of the local weight file, if missing use hardcoded one')
 ## passing epoch form which previous weight file stopped at so epoch numbering is correct
 parser.add_argument('--epochsstart',                  dest='EpochsStart',    action='store',                     default=0,  type=int,   help=' Number of epochs to use for training')
+## passing csv file which contains loss plots values from past trainings so the loss plots can include all epochs, not just the ones from this training
+parser.add_argument('--csv',                          dest='Csv',            action='store',                     default='',  type=str,   help='name of the csv file')
 
 args = parser.parse_args()
 
@@ -105,6 +106,7 @@ RGB = args.rgb
 EPOCHS_USED = args.Epochs
 WEIGHTS_CONTINUE = args.Weights
 EPOCHS_CONTINUE =args.EpochsStart
+CSV_LOAD = args.Csv
 #------------------------------------------------------------------------------------------#
 #----------------------------- INTERNAL CONFIGURATION PARAMETERS --------------------------#
 #------------------------------------------------------------------------------------------#
@@ -338,17 +340,14 @@ def loss_mse_select_clipped(y_true, y_pred) :
 
 # Generator used to load all the input file in the LOCAL_INPUT=False workflow
 ## Changed uproot to uproot3 in order to use central sample
-## debugging comments included below to check that generator is working correctly
 
 #OUTDATED! Doesn't run on all cycles
 def Generator(files) :
      while 1:
-        #print("entering while loop")
+        print("entering while loop")
         for f in files :
             import uproot3
-            #print("opening file")
             tfile = uproot3.open(f)
-            #print(f)
             tree = tfile[inputModuleName][inputTreeName]
             input_ = tree.array("cluster_measured")
             input_jeta = tree.array("jet_eta")
@@ -360,7 +359,7 @@ def Generator(files) :
             nev = len(target_prob)
             target_prob = np.reshape(target_prob, (nev,jetDim,jetDim,overlapNum,1))
             target_prob = concatenatenp([target_prob,wei],axis=4)
-           # print(len(input_jeta),batch_size, len(input_jeta)/batch_size)
+            print(len(input_jeta),batch_size, len(input_jeta)/batch_size)
             for k in range(int(len(input_jeta)/batch_size)) :
                 yield [input_[batch_size*(k):batch_size*(k+1)],input_jeta[batch_size*(k):batch_size*(k+1)],input_jpt[batch_size*(k):batch_size*(k+1)]], [target_[batch_size*(k):batch_size*(k+1)],target_prob[batch_size*(k):batch_size*(k+1)]]
 
@@ -714,7 +713,9 @@ jetNum_validation = tot_events_validation
 print("total number of events =", jetNum)
 print("total number of events validation=", jetNum_validation)
 
+## commented out since cant find val loss
 checkpointer = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5",verbose=1, save_weights_only=False)
+#checkpointer= ModelCheckpoint(filepath="weights.{epoch:02d}.hdf5",verbose=1, save_weights_only=False)
 
 if TRAIN :
     stepNum = jetNum/batch_size
@@ -763,44 +764,118 @@ if TRAIN :
     ## added start_epoch so loss file shows overall number of epochs
     pdf_loss = mpl.backends.backend_pdf.PdfPages("loss_file_ep{Epoch}_ev{ev}.pdf".format(Epoch=epochs+start_epoch,ev=jetNum))
 
-    if(not DEB1EV) :
-        plt.figure(1000)
-        plt.yscale('log')
-        pylab.plot(history.history['loss'])
-        pylab.plot(history.history['val_loss'])
-        pylab.title('model loss')
-        pylab.ylabel('loss')
-        pylab.xlabel('epoch')
-        plt.grid(True)
-        pylab.legend(['train', 'test'], loc='upper right')
-        pdf_loss.savefig(1000)
+    if(not DEB1EV) : 
+      ## Saving values of loss plots in a csv file so we can make loss plots with all the epochs when continuing trainings
+      epo = np.arange(start_epoch+1, epochs + start_epoch + 1)
+      #print(epo)
+      list_save = [epo, 
+          history.history['loss'],
+          history.history['val_loss'], 
+          history.history['reshape_1_loss'],
+          history.history['val_reshape_1_loss'],
+          history.history['reshape_2_loss'],
+          history.history['val_reshape_2_loss']]
+      #print(list_save)
+      arr = np.array(list_save)
+      #print(arr.T)
+      #print(history.history['loss'])
+      #print(history.history['val_loss'])
+      np.savetxt("loss_plots_{Epoch_i}_{Epoch_f}.csv".format(Epoch_i=start_epoch,Epoch_f=epochs+start_epoch),arr.T, delimiter = ",")
+      #DF = pd.DataFrame(arr)
+      #DF.to_csv("loss_plots_{Epoch_i}_{Epoch_f}.csv".format(Epoch_i=start_epoch,Epoch_f=epochs+start_epoch))
 
-        plt.figure(1001)
-        plt.yscale('log')
-        pylab.plot(history.history['reshape_1_loss'])
-        pylab.plot(history.history['val_reshape_1_loss'])
-        pylab.title('model loss (parameters)')
-        pylab.ylabel('loss')
-        pylab.xlabel('epoch')
-        plt.grid(True)
-        pylab.legend(['train', 'test'], loc='upper right')
-        pdf_loss.savefig(1001)
+      if (CONTINUE_TRAINING and CSV_LOAD):
+        csv_loss = pd.read_csv(CSV_LOAD)
+        csv_loss_arr = csv_loss.to_numpy()
+        #print(csv_loss_arr)
+        arr_full = np.vstack((csv_loss_arr, arr.T))
+        ## saving csv file with all loss values (current and previous trainings)
+        np.savetxt("loss_plots_full_{Epoch_i}_{Epoch_f}.csv".format(Epoch_i=0,Epoch_f=epochs+start_epoch),arr_full, delimiter = ",")
+        #print(arr_full)
+        #print(arr_full[:,0])
+        #print(arr_full[:,1])
+      else:
+        # if this is the first training then simply use the array defined earlier from history.history
+        arr_full = arr.T
+      
+      # Plotting loss plots
+      plt.figure(1000)
+      plt.yscale('log')
+      plt.plot(arr_full[:,0], arr_full[:,1])
+      plt.plot(arr_full[:,0], arr_full[:,2])
+      pylab.title('Model Loss')
+      pylab.ylabel('loss')
+      pylab.xlabel('epoch')
+      plt.grid(True)
+      pylab.legend(['train', 'validation'], loc='upper right')
+      pdf_loss.savefig(1000, bbox_inches='tight')
+
+      plt.figure(1001)
+      plt.yscale('log')
+      plt.plot(arr_full[:,0], arr_full[:,3])
+      plt.plot(arr_full[:,0], arr_full[:,4])
+      pylab.title('Model Loss (parameters)')
+      pylab.ylabel('loss')
+      pylab.xlabel('epoch')
+      plt.grid(True)
+      pylab.legend(['train', 'validation'], loc='upper right')
+      pdf_loss.savefig(1001, bbox_inches='tight')
+
+      plt.figure(1002)
+      plt.yscale('log')
+      plt.plot(arr_full[:,0], arr_full[:,5])
+      plt.plot(arr_full[:,0], arr_full[:,6])
+      pylab.title('Model Loss (pixel maps)')
+      pylab.ylabel('loss')
+      pylab.xlabel('epoch')
+      plt.grid(True)
+      pylab.legend(['train', 'validation'], loc='upper right')
+      pdf_loss.savefig(1002, bbox_inches='tight')
+
+## Old plotting script
+#        plt.figure(1000)
+#        plt.yscale('log')
+        ## pylab.plot(history.history['loss'])
+        ## pylab.plot(history.history['val_loss'])
+#        plt.plot(range(start_epoch,epochs+start_epoch),history.history['loss'])
+#        plt.plot(range(start_epoch,epochs+start_epoch),history.history['val_loss'])
+#        pylab.title('model loss')
+#        pylab.ylabel('loss')
+#        pylab.xlabel('epoch')
+#        plt.grid(True)
+#        pylab.legend(['train', 'test'], loc='upper right')
+#        pdf_loss.savefig(1000)
+
+#        plt.figure(1001)
+#        plt.yscale('log')
+        ## adjusting x axis so it starts from the epoch number from last training in case we continue training
+        ## pylab.plot(history.history['reshape_1_loss'])
+        ## pylab.plot(history.history['val_reshape_1_loss'])
+#        plt.plot(range(start_epoch,epochs+start_epoch),history.history['reshape_1_loss'])
+#        plt.plot(range(start_epoch,epochs+start_epoch),history.history['val_reshape_1_loss'])
+#        pylab.title('model loss (parameters)')
+#        pylab.ylabel('loss')
+#        pylab.xlabel('epoch')
+#        plt.grid(True)
+#        pylab.legend(['train', 'test'], loc='upper right')
+#        pdf_loss.savefig(1001)
 
         ## Can't find reshape_3_loss in the training, only reshape 1 and
         ## 2 availabe so we changed reshape_2 -> reshape_1 and reshape_3 ->
         ## reshape_2
-        ## reshape_1 refers to model parameter loss, which is using the clipped  mean square error as a loss function for jet parameter (eta, pt..etc)
-        ## reshape_2 refers to model probability loss, which is using a weighted binary cross entroy as loss function for the TCP maps (pixel maps with x, y and charge deposit)
-        plt.figure(1002)
+#        plt.figure(1002)
         # plt.yscale('log')
-        pylab.plot(history.history['reshape_2_loss'])
-        pylab.plot(history.history['val_reshape_2_loss'])
-        pylab.title('model loss (probability)')
-        pylab.ylabel('loss')
-        pylab.xlabel('epoch')
-        plt.grid(True)
-        pylab.legend(['train', 'test'], loc='upper right')
-        pdf_loss.savefig(1002)
+        ## pylab.plot(history.history['reshape_2_loss'])
+        ## pylab.plot(history.history['val_reshape_2_loss'])
+#        plt.plot(range(start_epoch,epochs+start_epoch),history.history['reshape_2_loss'])
+#        plt.plot(range(start_epoch,epochs+start_epoch),history.history['val_reshape_2_loss'])
+#        pylab.title('model loss (probability)')
+#        pylab.ylabel('loss')
+#        pylab.xlabel('epoch')
+#        plt.grid(True)
+#        pylab.legend(['train', 'test'], loc='upper right')
+#        pdf_loss.savefig(1002)
+        
 
     if EXTRA_VALIDATION :
         plt.figure(1003)
