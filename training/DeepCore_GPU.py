@@ -328,7 +328,7 @@ def loss_ROIsoft_crossentropy(target, output):
     output = math_ops.log(output / (1 - output))
     retval = nn.weighted_cross_entropy_with_logits(targets=target, logits=output, pos_weight=10)#900=works #2900=200x200, 125=30x30
     retval = retval*(wei+0.01) # here the difference
-    return tf.reduce_sum(retval, axis=None)/(tf.reduce_sum(wei,axis=None))
+    return tf.reduce_sum(retval, axis=None)/(tf.reduce_sum(wei,axis=None)+0.00001)
 
 #loss for track parameter
 def loss_mse_select_clipped(y_true, y_pred) :
@@ -373,7 +373,7 @@ def Generator2(filepath,batch_size=0,count=False):
 
     while 1:
         for cycle in range(1,9):
-            print(cycle)
+           # print(cycle)
             for chunk in uproot.iterate("{}:{}/{};{}".format(filepath,inputModuleName,inputTreeName,str(cycle)),branches,step_size=batch_size,library="np"):
                 if count:
                     yield chunk['jet_eta'].shape[0]
@@ -581,8 +581,8 @@ else :  #loaded the central input
     #files=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample*.root')
     #files_validation=glob.glob('/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample*.root')
     #Generator2 approach
-    trainingpath = "/storage/local/data1/gpuscratch/njh/Training0217/training/DeepCoreTrainingSample_*.root"
-    validationpath = "/storage/local/data1/gpuscratch/njh/Training0217/validation/DeepCoreTrainingSample_*.root"
+    trainingpath = "/storage/local/data1/gpuscratch/hichemb/DeepCore_Training/TrainingSamples/training/DeepCoreTrainingSample_*.root"
+    validationpath = "/storage/local/data1/gpuscratch/hichemb/DeepCore_Training/TrainingSamples/validation/DeepCoreTrainingSample_*.root"
     
     #GPU3 training/validation files
     #trainingpath = "/storage/local/data1/gpuscratch/njh/Training0217/training/DeepCoreTrainingSample_*.root:DeepCoreNtuplizerTest/DeepCoreNtuplizerTree;"
@@ -674,7 +674,7 @@ if TRAIN or PREDICT :
     reshaped_prob = Reshape((jetDim,jetDim,overlapNum,2))(conv1_3_1)
 
     model = Model([NNinputs,NNinputs_jeta,NNinputs_jpt],[reshaped,reshaped_prob])
-    anubi = keras.optimizers.Adam(lr=1e-8)#after epochs 252 (with septs/20 and batch_size 64)
+    anubi = keras.optimizers.Adam(learning_rate=0.00000001)#after epochs 252 (with septs/20 and batch_size 64)
 
     #model.compile(optimizer=anubi, loss=[loss_mse_select_clipped,loss_ROIsoft_crossentropy], loss_weights=[1,1]) #FOR LATE TRAINING
     model.compile(optimizer=anubi, loss=[loss_mse_select_clipped,loss_ROI_crossentropy], loss_weights=[1,1]) #FOR EARLY TRAINING
@@ -750,8 +750,10 @@ if TRAIN :
     else : #full standard training
         ## chaning steps_per_epoch=stepNum/20 to steps_per_epoch=stepNum
         #history = model.fit_generator(generator=Generator(files),steps_per_epoch=stepNum, epochs=epochs+start_epoch, verbose = 2, max_queue_size=1, validation_data=Generator(files_validation),  validation_steps=jetNum_validation/batch_
-        
-        history = model.fit(Generator2(trainingpath,batch_size),steps_per_epoch=int(stepNum)/20, epochs=start_epoch+args.Epochs,use_multiprocessing=True,workers=5, verbose = 2, max_queue_size=5,  validation_data=Generator2(validationpath,batch_size),  validation_steps=int(jetNum_validation/batch_size), initial_epoch=start_epoch, callbacks=[checkpointer]) 
+        ## Adjust step size between trainings: if step size = 1/20 then inverse_step_size = 20
+        inverse_step_size = 1
+        val_inverse_step_size = 1
+        history = model.fit(Generator2(trainingpath,batch_size),steps_per_epoch=int(stepNum/inverse_step_size),epochs=start_epoch+args.Epochs,verbose=2,max_queue_size=1,validation_data=Generator2(validationpath,batch_size),validation_steps=int(jetNum_validation/(val_inverse_step_size*batch_size)), initial_epoch=start_epoch, callbacks=[checkpointer])
         print("done running; now save")
         
     model.save_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum, ep=epochs+start_epoch))
