@@ -753,7 +753,7 @@ if PREDICT :
     if not TRAIN : #must be loaded previously produced weights, otherwise if you predict on the same sample of the training not needed
         #Barrel training (used in presentation, CMSSW PR...)
         ## model.load_weights('data/DeepCore_barrel_weights.246-0.87.hdf5')
-        model.load_weights('/storage/local/data1/gpuscratch/hichemb/XTraining0211/DeepCore_train_0211.h5')
+        model.load_weights('/storage/local/data1/gpuscratch/hichemb/Training0302/DeepCore_train_0302_252.h5')
         #EndCap training, last weights (not satisfactory, consider to restart)      
         # model.load_weights('DeepCore_ENDCAP_train_ep150.h5')
         #model.load_weights('DeepCore_train_ev{ev}_ep{ep}.h5'.format(ev=jetNum,ep=epochs+start_epoch)) 
@@ -1147,16 +1147,19 @@ if OUTPUT :
                  pylab.title('Residual distribution - y',fontsize=22)
              if(par == 2) :
                  pylab.title('Residual distribution - $\eta$',fontsize=22)
-                 plt.text(-0.032,1030, "CMS ", weight='bold', size=17)
-                 plt.text(-0.032,950, "Simulation Preliminary", style='italic', size=14)
-                 plt.text(0.0215,1030, "13 TeV", size = 17)
-                 plt.text(0.0025,915, r'QCD events ($\langle PU \rangle=30$)',size=14)
-                 plt.text(0.0025,830,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14)
-                 plt.text(0.0025,745,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14)
+                 ##plt.text(-0.032,0.026, "CMS ", weight='bold', size=17)
+                 ##plt.text(-0.032,0.023, "Simulation Preliminary", style='italic', size=14)
+                 ##plt.text(0.0215,0.026, "13 TeV", size = 17)
+                 ##plt.text(0.0025,-0.015, r'QCD events ($\langle PU \rangle=30$)',size=14)
+                 ##plt.text(0.0025,-0.02,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14)
+                 ##plt.text(0.0025,-.025,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14)
+                 
+                 
+                 
                  if not DRAW_ONLY : mean = np.array(bins).mean()
                  if not DRAW_ONLY : sigma = np.array(bins).std()
-                #if not DRAW_ONLY :  plt.text(0.009, 550, "Mean =%f"%(mean), size=14)
-                 if not DRAW_ONLY : plt.text(0.0145, 465, "$\sigma_{res}$ = %.3f"%(sigma), size=14)
+                 if not DRAW_ONLY :  plt.text(0.009, 100000, "Mean =%f"%(mean), size=14)
+                 if not DRAW_ONLY : plt.text(0.0145, 150000, "$\sigma_{res}$ = %.3f"%(sigma), size=14)
 
              if(par == 3) :
                  pylab.title('Residual distribution - $\phi$',fontsize=22)
@@ -1173,16 +1176,16 @@ if OUTPUT :
 
              plt.grid(True)
              if(RGB) :
-                 pylab.savefig("residual_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
-                 pylab.savefig("residual_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
+                 pylab.savefig("residual_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum), bbox_inches='tight')#.png
+                 pylab.savefig("residual_{jj}_{PAR}.png".format(PAR=par,jj=jetNum), bbox_inches='tight')#.png
 
-             pdf_par.savefig()
+             pdf_par.savefig(bbox_inches='tight')
 
              plt.figure()
              if(par!=4) :
-                 pylab.hist(bins_target,70, facecolor='royalblue', alpha=0.75, range=(-0.03,0.03))
+                 pylab.hist(bins_target,80, facecolor='royalblue', alpha=0.75,range=(-0.04,0.04))
              else :
-                 pylab.hist(bins_target,100, facecolor='royalblue', alpha=0.75, range=(-0,0.2))
+                 pylab.hist(bins_target,200, facecolor='royalblue', alpha=0.75, range=(-0.01,0.2))
 
              if(par == 0) :
                  pylab.title('Target distribution - x',fontsize=22)
@@ -1199,20 +1202,22 @@ if OUTPUT :
              elif(par==2 or par==3) :
                  pylab.xlabel('target',fontsize=18)
              else :
-                 pylab.xlabel('prediction-target [1/GeV]',fontsize=18)
+                 ##pylab.xlabel('prediction-target [1/GeV]',fontsize=18)
+                 ## fixed to correct label
+                 pylab.xlabel('Target [1/GeV]',fontsize=18)
              pylab.ylabel('entries',fontsize=18)
              plt.grid(True)
              if(RGB) :
-                 pylab.savefig("target_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
-                 pylab.savefig("target_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
+                 pylab.savefig("target_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum), bbox_inches='tight')#.png
+                 pylab.savefig("target_{jj}_{PAR}.png".format(PAR=par,jj=jetNum), bbox_inches='tight')#.png
 
-             pdf_par.savefig()
+             pdf_par.savefig(bbox_inches='tight')
 
              plt.figure()
              if(par!=4) :
-                 pylab.hist(bins_pred,70, facecolor='red', alpha=0.75, range=(-0.03,0.03))
+                 pylab.hist(bins_pred,80, facecolor='red', alpha=0.75,range=(-0.04,0.04))
              else :
-                 pylab.hist(bins_pred,200, facecolor='red', alpha=0.75, range=(-0.2,0.2))
+                 pylab.hist(bins_pred,200, facecolor='red', alpha=0.75, range=(-0.01,0.2))
 
              if(par == 0) :
                  pylab.title('Prediction distribution - x',fontsize=22)
@@ -1229,54 +1234,102 @@ if OUTPUT :
              elif(par==2 or par==3) :
                  pylab.xlabel('prediction',fontsize=18)
              else :
-                 pylab.xlabel('prediction-target [1/GeV]',fontsize=18)
+                 ##pylab.xlabel('prediction-target [1/GeV]',fontsize=18)
+                 ## fixed to correct label
+                 pylab.xlabel('prediction [1/GeV]',fontsize=18)
              pylab.ylabel('entries',fontsize=18)
              plt.grid(True)
              if(RGB) :
-                 pylab.savefig("prediction_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
-                 pylab.savefig("prediction_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
+                 pylab.savefig("prediction_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum),bbox_inches='tight')#.png
+                 pylab.savefig("prediction_{jj}_{PAR}.png".format(PAR=par,jj=jetNum),bbox_inches='tight')#.png
 
-             pdf_par.savefig()
+             pdf_par.savefig(bbox_inches='tight')
 
              #scatter plot
              if(not DRAW_ONLY) :
                  plt.figure()
                  if(par == 0) :
-                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.015, 0.015], [-0.015, 0.015]], cmap=plt.cm.viridis)#, marker='+')
-                     plt.xlabel('x prediction [cm]')
-                     plt.ylabel('x target [cm]')
-                     plt.colorbar()
+                    #bins_pred_minus_target = []
+                    #zip_object = zip(bins_pred, bins_target)
+                    #for bins_pred_i, bins_target_i in zip_object:
+                    #      bins_pred_minus_target.append(bins_pred_i-bins_target_i)
+                   # plt.hist2d(bins_target,bins_pred_minus_target,bins=50,range = [[-0.015, 0.015], [-0.015, 0.015]], cmap=plt.cm.viridis)#, marker='+')
+                   # plt.xlabel('x target [cm]')
+                   # plt.ylabel('x (prediction - target) [cm]')
+                    
+                    ## old scatter plot (target vs pred)
+                    plt.hist2d(bins_pred,bins_target,bins=100,range = [[-0.015,0.015], [-0.015, 0.015]], cmap=plt.cm.viridis)#, marker='+')
+                    plt.xlabel('x prediction [cm]', fontsize=18)
+                    plt.ylabel('x target [cm]', fontsize=18)
+                    plt.colorbar()
                  if(par == 1) :
-                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.02, 0.02], [-0.02, 0.02]], cmap=plt.cm.viridis)
-                     plt.xlabel('y prediction [cm]')
-                     plt.ylabel('y target [cm]')
-                     plt.colorbar()
+                    #bins_pred_minus_target = []
+                    #zip_object = zip(bins_pred, bins_target)
+                    #for bins_pred_i, bins_target_i in zip_object:
+                    #      bins_pred_minus_target.append(bins_pred_i-bins_target_i)
+                    #plt.hist2d(bins_target,bins_pred_minus_target,bins=50,range = [[-0.02, 0.02], [-0.02, 0.02]], cmap=plt.cm.viridis)#, marker='+')
+                    #plt.xlabel('y target [cm]')
+                    #plt.ylabel('y (prediction - target) [cm]')
+                    
+                    ## old scatter plot (target vs pred)
+                    plt.hist2d(bins_pred,bins_target,bins=100,range = [[-0.015,0.015], [-0.015, 0.015]], cmap=plt.cm.viridis) 
+                    plt.xlabel('y prediction [cm]', fontsize=18)
+                    plt.ylabel('y target [cm]', fontsize=18)
+                    plt.colorbar()
                  if(par == 2) :
-                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
-                     plt.xlabel('$\eta$ prediction', fontsize=18, labelpad=-5)
-                     plt.ylabel('$\eta$ target', fontsize=18, labelpad=-5)
-                     plt.colorbar()
-                     plt.text(-0.029,0.026, "CMS ", weight='bold', size=17, color="white")
-                     plt.text(-0.029,0.023, "Simulation Preliminary", style='italic', size=14, color="white")
-                     plt.text(0.017,0.026, "13 TeV", size = 17,color="white")
-                     plt.text(-0.005,-0.015, r'QCD events ($\langle PU \rangle=30$)',size=14,color="white")
-                     plt.text(-0.005,-0.02,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14,color="white")
-                     plt.text(-0.005,-0.025,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14,color="white")
+                    #bins_pred_minus_target = []
+                    #zip_object = zip(bins_pred, bins_target)
+                    #for bins_pred_i, bins_target_i in zip_object:
+                    #      bins_pred_minus_target.append(bins_pred_i-bins_target_i)
+                    #plt.hist2d(bins_target,bins_pred_minus_target,bins=50,range = [[-0.04, 0.04], [-0.01, 0.01]], cmap=plt.cm.viridis)
+                    #plt.xlabel('$\eta$ target', fontsize=18, labelpad=-5)
+                    #plt.ylabel('$\eta$ (prediction - target)', fontsize=18, labelpad=-5)
+                    
+                    ## old scatter plot (target vs pred)
+                    plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
+                    plt.xlabel('$\eta$ prediction', fontsize=18)
+                    plt.ylabel('$\eta$ target', fontsize=18)
+                    plt.colorbar()
+                    
+                    ## plt.text(-0.029,0.026, "CMS ", weight='bold', size=17, color="white")
+                    ## plt.text(-0.029,0.023, "Simulation Preliminary", style='italic', size=14, color="white")
+                    ## plt.text(0.017,0.026, "13 TeV", size = 17,color="white")
+                    ## plt.text(-0.005,-0.015, r'QCD events ($\langle PU \rangle=30$)',size=14,color="white")
+                    ## plt.text(-0.005,-0.02,r'1.8 TeV $<\hat p_T<$2.4 TeV',size=14,color="white")
+                    ## plt.text(-0.005,-0.025,r'$p_T^{jet}>1$ TeV, $|\eta^{jet}|<1.4$',size=14,color="white")
 
 
                  if(par == 3) :
-                     plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
-                     plt.xlabel('$\phi$ prediction')
-                     plt.ylabel('$\phi$ target')
-                     plt.colorbar()
+                    #bins_pred_minus_target = []
+                    #zip_object = zip(bins_pred, bins_target)
+                    #for bins_pred_i, bins_target_i in zip_object:
+                    #      bins_pred_minus_target.append(bins_pred_i-bins_target_i)
+                    #plt.hist2d(bins_target,bins_pred_minus_target,bins=50,range = [[-0.04, 0.04], [-0.01, 0.01]], cmap=plt.cm.viridis)
+                    #plt.xlabel('$\phi$ target', fontsize=18, labelpad=-5)
+                    #plt.ylabel('$\phi$ (prediction - target)', fontsize=18, labelpad=-5)
+                    
+                    ## old scatter plot (target vs pred)
+                    plt.hist2d(bins_pred,bins_target,bins=50,range = [[-0.03, 0.03], [-0.03, 0.03]], cmap=plt.cm.viridis)
+                    plt.xlabel('$\phi$ prediction', fontsize=18)
+                    plt.ylabel('$\phi$ target', fontsize=18)
+                    plt.colorbar()
                  if(par == 4) :
-                     plt.hist2d(bins_pred,bins_target,bins=30,range = [[0, 0.15], [0, 0.15]])
-                     plt.xlabel('$p_T$ prediction [1/GeV]')
-                     plt.ylabel('$p_T$ target [1/GeV]')
-                     plt.colorbar()
+                    #bins_pred_minus_target = []
+                    #zip_object = zip(bins_pred, bins_target)
+                    #for bins_pred_i, bins_target_i in zip_object:
+                    #      bins_pred_minus_target.append(bins_pred_i-bins_target_i)
+                    ##plt.hist2d(bins_target,bins_pred_minus_target,bins=30,range= [[0, 0.2], [-0.2, 0.2]], cmap=plt.cm.viridis)
+                    ##plt.xlabel('$1/p_T$ target [1/GeV]', fontsize=18, labelpad=-5)
+                    ##plt.ylabel('$1/p_T$ (prediction - target) [1/GeV]', fontsize=18, labelpad=-5)
+                  
+                    ## old scatter plot (target vs pred)
+                    plt.hist2d(bins_pred,bins_target,bins=150,range = [[0, 0.15], [0, 0.15]])
+                    plt.xlabel('$1/p_T$ prediction [1/GeV]', fontsize=18)
+                    plt.ylabel('$1/p_T$ target [1/GeV]', fontsize=18)
+                    plt.colorbar()
                  if(RGB) :
-                     pylab.savefig("predVStarget_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum))#.png
-                     pylab.savefig("predVStarget_{jj}_{PAR}.png".format(PAR=par,jj=jetNum))#.png
+                     pylab.savefig("predVStarget_{jj}_{PAR}.pdf".format(PAR=par,jj=jetNum),bbox_inches='tight')#.png
+                     pylab.savefig("predVStarget_{jj}_{PAR}.png".format(PAR=par,jj=jetNum),bbox_inches='tight')#.png
 
-                 pdf_par.savefig()
+                 pdf_par.savefig(bbox_inches='tight')
          pdf_par.close()
