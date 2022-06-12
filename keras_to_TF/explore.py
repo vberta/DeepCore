@@ -7,6 +7,8 @@ import sys
 import tensorflow.compat.v1 as tf
 from tensorflow.python.platform import gfile
 
+# prints out output nodes of a given pb file
+
 f = sys.argv[1]
 GRAPH_PB_PATH = f
 with tf.Session() as sess:
