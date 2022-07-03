@@ -1,0 +1,113 @@
+2022-06-15 18:57:38.648240: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-06-15 18:57:40.487271: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1510] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 3250 MB memory:  -> device: 0, name: Tesla P100-PCIE-12GB, pci bus id: 0000:65:00.0, compute capability: 6.0
+2022-06-15 19:00:06.947486: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/tensorflow/python/util/dispatch.py:206: calling weighted_cross_entropy_with_logits (from tensorflow.python.ops.nn_impl) with targets is deprecated and will be removed in a future version.
+Instructions for updating:
+targets is deprecated, use labels instead
+2022-06-15 19:00:23.554827: I tensorflow/stream_executor/cuda/cuda_dnn.cc:369] Loaded cuDNN version 8100
+jetUps= (None, 30, 30, 2)
+NNinputs= (None, 30, 30, 4)
+ComplInput= (None, 30, 30, 6)
+Model: "model"
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to                     
+==================================================================================================
+input_1 (InputLayer)            [(None, 1)]          0                                            
+__________________________________________________________________________________________________
+input_2 (InputLayer)            [(None, 1)]          0                                            
+__________________________________________________________________________________________________
+concatenate (Concatenate)       (None, 2)            0           input_1[0][0]                    
+                                                                 input_2[0][0]                    
+__________________________________________________________________________________________________
+reshape (Reshape)               (None, 1, 1, 2)      0           concatenate[0][0]                
+__________________________________________________________________________________________________
+input_3 (InputLayer)            [(None, 30, 30, 4)]  0                                            
+__________________________________________________________________________________________________
+up_sampling2d (UpSampling2D)    (None, 30, 30, 2)    0           reshape[0][0]                    
+__________________________________________________________________________________________________
+concatenate_1 (Concatenate)     (None, 30, 30, 6)    0           input_3[0][0]                    
+                                                                 up_sampling2d[0][0]              
+__________________________________________________________________________________________________
+conv2d (Conv2D)                 (None, 30, 30, 50)   14750       concatenate_1[0][0]              
+__________________________________________________________________________________________________
+conv2d_1 (Conv2D)               (None, 30, 30, 20)   25020       conv2d[0][0]                     
+__________________________________________________________________________________________________
+conv2d_2 (Conv2D)               (None, 30, 30, 20)   10020       conv2d_1[0][0]                   
+__________________________________________________________________________________________________
+conv2d_3 (Conv2D)               (None, 30, 30, 18)   9018        conv2d_2[0][0]                   
+__________________________________________________________________________________________________
+conv2d_4 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_3[0][0]                   
+__________________________________________________________________________________________________
+conv2d_5 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_4[0][0]                   
+__________________________________________________________________________________________________
+conv2d_9 (Conv2D)               (None, 30, 30, 12)   1956        conv2d_4[0][0]                   
+__________________________________________________________________________________________________
+conv2d_6 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_5[0][0]                   
+__________________________________________________________________________________________________
+conv2d_10 (Conv2D)              (None, 30, 30, 9)    981         conv2d_9[0][0]                   
+__________________________________________________________________________________________________
+conv2d_7 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_6[0][0]                   
+__________________________________________________________________________________________________
+conv2d_11 (Conv2D)              (None, 30, 30, 7)    574         conv2d_10[0][0]                  
+__________________________________________________________________________________________________
+conv2d_8 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_7[0][0]                   
+__________________________________________________________________________________________________
+conv2d_12 (Conv2D)              (None, 30, 30, 6)    384         conv2d_11[0][0]                  
+__________________________________________________________________________________________________
+reshape_1 (Reshape)             (None, 30, 30, 3, 6) 0           conv2d_8[0][0]                   
+__________________________________________________________________________________________________
+reshape_2 (Reshape)             (None, 30, 30, 3, 2) 0           conv2d_12[0][0]                  
+==================================================================================================
+Total params: 77,373
+Trainable params: 77,373
+Non-trainable params: 0
+__________________________________________________________________________________________________
+number of  file= 273
+number of file validation= 68
+total number of events = 8341541
+total number of events validation= 2079273
+Number of Steps= 130336.578125
+training: start
+Epoch 1/10
+6516/6516 - 1286s - loss: 1.3486 - reshape_1_loss: 0.6452 - reshape_2_loss: 0.7033 - val_loss: 0.9366 - val_reshape_1_loss: 0.4163 - val_reshape_2_loss: 0.5203
+
+Epoch 00001: saving model to weights.01-0.94.hdf5
+Epoch 2/10
+6516/6516 - 1185s - loss: 0.8999 - reshape_1_loss: 0.3942 - reshape_2_loss: 0.5057 - val_loss: 0.8658 - val_reshape_1_loss: 0.3797 - val_reshape_2_loss: 0.4861
+
+Epoch 00002: saving model to weights.02-0.87.hdf5
+Epoch 3/10
+6516/6516 - 1170s - loss: 0.8507 - reshape_1_loss: 0.3683 - reshape_2_loss: 0.4824 - val_loss: 0.8314 - val_reshape_1_loss: 0.3563 - val_reshape_2_loss: 0.4751
+
+Epoch 00003: saving model to weights.03-0.83.hdf5
+Epoch 4/10
+6516/6516 - 1142s - loss: 0.8295 - reshape_1_loss: 0.3571 - reshape_2_loss: 0.4724 - val_loss: 0.8125 - val_reshape_1_loss: 0.3477 - val_reshape_2_loss: 0.4648
+
+Epoch 00004: saving model to weights.04-0.81.hdf5
+Epoch 5/10
+6516/6516 - 1130s - loss: 0.8162 - reshape_1_loss: 0.3509 - reshape_2_loss: 0.4653 - val_loss: 0.8062 - val_reshape_1_loss: 0.3484 - val_reshape_2_loss: 0.4578
+
+Epoch 00005: saving model to weights.05-0.81.hdf5
+Epoch 6/10
+6516/6516 - 1107s - loss: 0.8098 - reshape_1_loss: 0.3485 - reshape_2_loss: 0.4612 - val_loss: 0.8041 - val_reshape_1_loss: 0.3473 - val_reshape_2_loss: 0.4568
+
+Epoch 00006: saving model to weights.06-0.80.hdf5
+Epoch 7/10
+6516/6516 - 813s - loss: 0.8063 - reshape_1_loss: 0.3461 - reshape_2_loss: 0.4602 - val_loss: 0.7980 - val_reshape_1_loss: 0.3432 - val_reshape_2_loss: 0.4548
+
+Epoch 00007: saving model to weights.07-0.80.hdf5
+Epoch 8/10
+6516/6516 - 815s - loss: 0.7973 - reshape_1_loss: 0.3432 - reshape_2_loss: 0.4541 - val_loss: 0.7909 - val_reshape_1_loss: 0.3398 - val_reshape_2_loss: 0.4511
+
+Epoch 00008: saving model to weights.08-0.79.hdf5
+Epoch 9/10
+6516/6516 - 817s - loss: 0.7895 - reshape_1_loss: 0.3388 - reshape_2_loss: 0.4507 - val_loss: 0.7898 - val_reshape_1_loss: 0.3405 - val_reshape_2_loss: 0.4493
+
+Epoch 00009: saving model to weights.09-0.79.hdf5
+Epoch 10/10
+6516/6516 - 816s - loss: 0.7883 - reshape_1_loss: 0.3382 - reshape_2_loss: 0.4501 - val_loss: 0.7853 - val_reshape_1_loss: 0.3368 - val_reshape_2_loss: 0.4485
+
+Epoch 00010: saving model to weights.10-0.79.hdf5
+done running; now save
+training: completed
