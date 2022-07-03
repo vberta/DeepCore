@@ -1,0 +1,2157 @@
+2022-02-17 14:40:10.698815: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-02-17 14:40:14.818713: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1510] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 11323 MB memory:  -> device: 0, name: Tesla P100-PCIE-12GB, pci bus id: 0000:65:00.0, compute capability: 6.0
+2022-02-17 14:41:09.725946: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
+/usr/local/lib/python3.6/dist-packages/keras/optimizer_v2/optimizer_v2.py:356: UserWarning: The `lr` argument is deprecated, use `learning_rate` instead.
+  "The `lr` argument is deprecated, use `learning_rate` instead.")
+/usr/local/lib/python3.6/dist-packages/keras/engine/training.py:1972: UserWarning: `Model.fit_generator` is deprecated and will be removed in a future version. Please use `Model.fit`, which supports generators.
+  warnings.warn('`Model.fit_generator` is deprecated and '
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/tensorflow/python/util/dispatch.py:206: calling weighted_cross_entropy_with_logits (from tensorflow.python.ops.nn_impl) with targets is deprecated and will be removed in a future version.
+Instructions for updating:
+targets is deprecated, use labels instead
+2022-02-17 14:41:17.186476: I tensorflow/stream_executor/cuda/cuda_dnn.cc:369] Loaded cuDNN version 8100
+jetUps= (None, 30, 30, 2)
+NNinputs= (None, 30, 30, 7)
+ComplInput= (None, 30, 30, 9)
+Model: "model"
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to                     
+==================================================================================================
+input_1 (InputLayer)            [(None, 1)]          0                                            
+__________________________________________________________________________________________________
+input_2 (InputLayer)            [(None, 1)]          0                                            
+__________________________________________________________________________________________________
+concatenate (Concatenate)       (None, 2)            0           input_1[0][0]                    
+                                                                 input_2[0][0]                    
+__________________________________________________________________________________________________
+reshape (Reshape)               (None, 1, 1, 2)      0           concatenate[0][0]                
+__________________________________________________________________________________________________
+input_3 (InputLayer)            [(None, 30, 30, 7)]  0                                            
+__________________________________________________________________________________________________
+up_sampling2d (UpSampling2D)    (None, 30, 30, 2)    0           reshape[0][0]                    
+__________________________________________________________________________________________________
+concatenate_1 (Concatenate)     (None, 30, 30, 9)    0           input_3[0][0]                    
+                                                                 up_sampling2d[0][0]              
+__________________________________________________________________________________________________
+conv2d (Conv2D)                 (None, 30, 30, 50)   22100       concatenate_1[0][0]              
+__________________________________________________________________________________________________
+conv2d_1 (Conv2D)               (None, 30, 30, 20)   25020       conv2d[0][0]                     
+__________________________________________________________________________________________________
+conv2d_2 (Conv2D)               (None, 30, 30, 20)   10020       conv2d_1[0][0]                   
+__________________________________________________________________________________________________
+conv2d_3 (Conv2D)               (None, 30, 30, 18)   9018        conv2d_2[0][0]                   
+__________________________________________________________________________________________________
+conv2d_4 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_3[0][0]                   
+__________________________________________________________________________________________________
+conv2d_5 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_4[0][0]                   
+__________________________________________________________________________________________________
+conv2d_9 (Conv2D)               (None, 30, 30, 12)   1956        conv2d_4[0][0]                   
+__________________________________________________________________________________________________
+conv2d_6 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_5[0][0]                   
+__________________________________________________________________________________________________
+conv2d_10 (Conv2D)              (None, 30, 30, 9)    981         conv2d_9[0][0]                   
+__________________________________________________________________________________________________
+conv2d_7 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_6[0][0]                   
+__________________________________________________________________________________________________
+conv2d_11 (Conv2D)              (None, 30, 30, 7)    574         conv2d_10[0][0]                  
+__________________________________________________________________________________________________
+conv2d_8 (Conv2D)               (None, 30, 30, 18)   2934        conv2d_7[0][0]                   
+__________________________________________________________________________________________________
+conv2d_12 (Conv2D)              (None, 30, 30, 6)    384         conv2d_11[0][0]                  
+__________________________________________________________________________________________________
+reshape_1 (Reshape)             (None, 30, 30, 3, 6) 0           conv2d_8[0][0]                   
+__________________________________________________________________________________________________
+reshape_2 (Reshape)             (None, 30, 30, 3, 2) 0           conv2d_12[0][0]                  
+==================================================================================================
+Total params: 84,723
+Trainable params: 84,723
+Non-trainable params: 0
+__________________________________________________________________________________________________
+number of  file= 273
+number of file validation= 68
+total number of events = 1045202
+total number of events validation= 260241
+Number of Steps= 16331.28125
+training: start
+entering while loop
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_110.root
+3748 64 58.5625
+Epoch 1/2
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_112.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_113.root
+3637 64 56.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_114.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_115.root
+3939 64 61.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_116.root
+3699 64 57.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_117.root
+3829 64 59.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_118.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_119.root
+3816 64 59.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_11.root
+3766 64 58.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_120.root
+3896 64 60.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_121.root
+3840 64 60.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_122.root
+3844 64 60.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_123.root
+4026 64 62.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_124.root
+3784 64 59.125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_125.root
+3862 64 60.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_126.root
+3725 64 58.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_127.root
+3910 64 61.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_128.root
+3698 64 57.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_129.root
+3932 64 61.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_12.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_130.root
+3743 64 58.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_131.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_132.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_133.root
+3757 64 58.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_134.root
+3871 64 60.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_135.root
+3911 64 61.109375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_136.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_137.root
+3901 64 60.953125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_138.root
+3755 64 58.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_139.root
+3892 64 60.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_13.root
+3894 64 60.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_140.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_141.root
+3897 64 60.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_142.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_143.root
+3899 64 60.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_144.root
+3795 64 59.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_145.root
+3684 64 57.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_146.root
+3748 64 58.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_147.root
+3788 64 59.1875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_148.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_149.root
+3766 64 58.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_14.root
+3927 64 61.359375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_150.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_151.root
+3891 64 60.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_152.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_153.root
+3827 64 59.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_154.root
+3848 64 60.125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_155.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_156.root
+3798 64 59.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_157.root
+3820 64 59.6875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_158.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_159.root
+3877 64 60.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_15.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_160.root
+3800 64 59.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_161.root
+3997 64 62.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_162.root
+3806 64 59.46875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_163.root
+3756 64 58.6875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_164.root
+3991 64 62.359375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_165.root
+3843 64 60.046875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_166.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_167.root
+3818 64 59.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_168.root
+3839 64 59.984375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_169.root
+3599 64 56.234375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_16.root
+3987 64 62.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_170.root
+3791 64 59.234375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_171.root
+3932 64 61.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_172.root
+3763 64 58.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_173.root
+3758 64 58.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_174.root
+3842 64 60.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_175.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_176.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_177.root
+3743 64 58.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_178.root
+3812 64 59.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_179.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_17.root
+3844 64 60.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_180.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_181.root
+3755 64 58.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_182.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_183.root
+3875 64 60.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_184.root
+3649 64 57.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_185.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_186.root
+3780 64 59.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_187.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_188.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_189.root
+3736 64 58.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_18.root
+3755 64 58.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_190.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_191.root
+3782 64 59.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_192.root
+3752 64 58.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_193.root
+3953 64 61.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_194.root
+3800 64 59.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_195.root
+3812 64 59.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_196.root
+3841 64 60.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_197.root
+3945 64 61.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_198.root
+3846 64 60.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_199.root
+3725 64 58.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_19.root
+3849 64 60.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_210.root
+3758 64 58.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_211.root
+3813 64 59.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_212.root
+3713 64 58.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_213.root
+3786 64 59.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_214.root
+3897 64 60.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_215.root
+3758 64 58.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_216.root
+3733 64 58.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_217.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_218.root
+3893 64 60.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_219.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_21.root
+3803 64 59.421875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_220.root
+3743 64 58.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_221.root
+3676 64 57.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_223.root
+3840 64 60.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_224.root
+3780 64 59.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_225.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_226.root
+3807 64 59.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_227.root
+3866 64 60.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_228.root
+3767 64 58.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_229.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_22.root
+3752 64 58.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_230.root
+3750 64 58.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_231.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_232.root
+3745 64 58.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_233.root
+3707 64 57.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_234.root
+3752 64 58.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_235.root
+3750 64 58.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_236.root
+3869 64 60.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_237.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_238.root
+3741 64 58.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_239.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_23.root
+3841 64 60.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_240.root
+3958 64 61.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_241.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_242.root
+3717 64 58.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_243.root
+3754 64 58.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_244.root
+3779 64 59.046875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_245.root
+3816 64 59.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_246.root
+3802 64 59.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_247.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_248.root
+3772 64 58.9375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_249.root
+3888 64 60.75
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_24.root
+3951 64 61.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_250.root
+3799 64 59.359375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_251.root
+3787 64 59.171875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_252.root
+3734 64 58.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_253.root
+3908 64 61.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_254.root
+3938 64 61.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_255.root
+3753 64 58.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_256.root
+3764 64 58.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_257.root
+3766 64 58.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_258.root
+3894 64 60.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_259.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_25.root
+3771 64 58.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_260.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_261.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_262.root
+3834 64 59.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_263.root
+3985 64 62.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_264.root
+3920 64 61.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_265.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_266.root
+3791 64 59.234375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_267.root
+3808 64 59.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_268.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_269.root
+3914 64 61.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_26.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_270.root
+3954 64 61.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_271.root
+4025 64 62.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_272.root
+3937 64 61.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_273.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_274.root
+3842 64 60.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_275.root
+3760 64 58.75
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_276.root
+3780 64 59.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_277.root
+3874 64 60.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_278.root
+3725 64 58.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_279.root
+3913 64 61.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_27.root
+3876 64 60.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_280.root
+3792 64 59.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_281.root
+3906 64 61.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_282.root
+3852 64 60.1875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_283.root
+3892 64 60.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_284.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_285.root
+3930 64 61.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_286.root
+3753 64 58.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_287.root
+3859 64 60.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_288.root
+3990 64 62.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_289.root
+3850 64 60.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_28.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_290.root
+3850 64 60.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_291.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_292.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_293.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_294.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_295.root
+3880 64 60.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_296.root
+3840 64 60.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_297.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_298.root
+3886 64 60.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_299.root
+3705 64 57.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_29.root
+3876 64 60.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_40.root
+3829 64 59.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_41.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_42.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_43.root
+3874 64 60.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_44.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_45.root
+3787 64 59.171875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_46.root
+3822 64 59.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_47.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_48.root
+3877 64 60.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_49.root
+3794 64 59.28125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_4.root
+3834 64 59.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_50.root
+3920 64 61.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_51.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_52.root
+3889 64 60.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_53.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_54.root
+3712 64 58.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_55.root
+3960 64 61.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_56.root
+3897 64 60.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_57.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_58.root
+3869 64 60.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_59.root
+3854 64 60.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_5.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_60.root
+3749 64 58.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_61.root
+3797 64 59.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_62.root
+3798 64 59.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_63.root
+3774 64 58.96875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_64.root
+3925 64 61.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_65.root
+3883 64 60.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_66.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_67.root
+3797 64 59.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_68.root
+3970 64 62.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_69.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_6.root
+3770 64 58.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_70.root
+3837 64 59.953125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_71.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_72.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_73.root
+3822 64 59.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_74.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_75.root
+3795 64 59.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_76.root
+3798 64 59.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_77.root
+3807 64 59.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_78.root
+3802 64 59.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_79.root
+3718 64 58.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_7.root
+3781 64 59.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_80.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_81.root
+3770 64 58.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_82.root
+3914 64 61.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_83.root
+3818 64 59.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_84.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_85.root
+3790 64 59.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_86.root
+3947 64 61.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_87.root
+3877 64 60.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_88.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_89.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_8.root
+3923 64 61.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_90.root
+3910 64 61.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_91.root
+3883 64 60.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_92.root
+3669 64 57.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_93.root
+3890 64 60.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_94.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_95.root
+3827 64 59.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_96.root
+3770 64 58.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_97.root
+3859 64 60.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_98.root
+3830 64 59.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_99.root
+3860 64 60.3125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_9.root
+3707 64 57.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_310.root
+3941 64 61.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_311.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_312.root
+3876 64 60.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_313.root
+3817 64 59.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_314.root
+3892 64 60.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_315.root
+3906 64 61.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_316.root
+3814 64 59.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_317.root
+3760 64 58.75
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_318.root
+3785 64 59.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_319.root
+3890 64 60.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_31.root
+3876 64 60.5625
+entering while loop
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_110.root
+3748 64 58.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_112.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_113.root
+3637 64 56.828125
+entering while loop
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_320.root
+3838 64 59.96875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_321.root
+3800 64 59.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_322.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_323.root
+3751 64 58.609375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_324.root
+3929 64 61.390625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_325.root
+3880 64 60.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_326.root
+3806 64 59.46875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_327.root
+3891 64 60.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_328.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_329.root
+3946 64 61.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_32.root
+3875 64 60.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_330.root
+3905 64 61.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_331.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_332.root
+3726 64 58.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_334.root
+3788 64 59.1875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_335.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_336.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_337.root
+3889 64 60.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_338.root
+3812 64 59.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_339.root
+3836 64 59.9375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_33.root
+3820 64 59.6875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_340.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_341.root
+3849 64 60.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_342.root
+3730 64 58.28125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_343.root
+3792 64 59.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_344.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_345.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_346.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_347.root
+3839 64 59.984375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_348.root
+3850 64 60.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_349.root
+3847 64 60.109375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_34.root
+3795 64 59.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_350.root
+3867 64 60.421875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_351.root
+3741 64 58.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_352.root
+3853 64 60.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_353.root
+3868 64 60.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_354.root
+3740 64 58.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_355.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_356.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_357.root
+3826 64 59.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_358.root
+3928 64 61.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_359.root
+3778 64 59.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_35.root
+3793 64 59.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_360.root
+3782 64 59.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_361.root
+3878 64 60.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_362.root
+3749 64 58.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_363.root
+3874 64 60.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_364.root
+3701 64 57.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_365.root
+3899 64 60.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_366.root
+3854 64 60.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_367.root
+3972 64 62.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_368.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_369.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_36.root
+3753 64 58.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_370.root
+3782 64 59.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_371.root
+3938 64 61.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_372.root
+3729 64 58.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_373.root
+3765 64 58.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_374.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_375.root
+3853 64 60.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_376.root
+3944 64 61.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_377.root
+3847 64 60.109375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_378.root
+3763 64 58.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_379.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_37.root
+3697 64 57.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_380.root
+3836 64 59.9375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_38.root
+3695 64 57.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_39.root
+3790 64 59.21875
+entering while loop
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_320.root
+3838 64 59.96875
+16331/16331 - 1565s - loss: 19.1514 - reshape_1_loss: 16.0813 - reshape_2_loss: 3.0701 - val_loss: 14.7958 - val_reshape_1_loss: 12.0518 - val_reshape_2_loss: 2.7440
+
+Epoch 00001: saving model to weights.01-14.80.hdf5
+Epoch 2/2
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_114.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_115.root
+3939 64 61.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_116.root
+3699 64 57.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_117.root
+3829 64 59.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_118.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_119.root
+3816 64 59.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_11.root
+3766 64 58.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_120.root
+3896 64 60.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_121.root
+3840 64 60.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_122.root
+3844 64 60.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_123.root
+4026 64 62.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_124.root
+3784 64 59.125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_125.root
+3862 64 60.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_126.root
+3725 64 58.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_127.root
+3910 64 61.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_128.root
+3698 64 57.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_129.root
+3932 64 61.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_12.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_130.root
+3743 64 58.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_131.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_132.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_133.root
+3757 64 58.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_134.root
+3871 64 60.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_135.root
+3911 64 61.109375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_136.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_137.root
+3901 64 60.953125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_138.root
+3755 64 58.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_139.root
+3892 64 60.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_13.root
+3894 64 60.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_140.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_141.root
+3897 64 60.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_142.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_143.root
+3899 64 60.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_144.root
+3795 64 59.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_145.root
+3684 64 57.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_146.root
+3748 64 58.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_147.root
+3788 64 59.1875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_148.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_149.root
+3766 64 58.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_14.root
+3927 64 61.359375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_150.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_151.root
+3891 64 60.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_152.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_153.root
+3827 64 59.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_154.root
+3848 64 60.125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_155.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_156.root
+3798 64 59.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_157.root
+3820 64 59.6875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_158.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_159.root
+3877 64 60.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_15.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_160.root
+3800 64 59.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_161.root
+3997 64 62.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_162.root
+3806 64 59.46875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_163.root
+3756 64 58.6875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_164.root
+3991 64 62.359375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_165.root
+3843 64 60.046875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_166.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_167.root
+3818 64 59.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_168.root
+3839 64 59.984375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_169.root
+3599 64 56.234375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_16.root
+3987 64 62.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_170.root
+3791 64 59.234375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_171.root
+3932 64 61.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_172.root
+3763 64 58.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_173.root
+3758 64 58.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_174.root
+3842 64 60.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_175.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_176.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_177.root
+3743 64 58.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_178.root
+3812 64 59.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_179.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_17.root
+3844 64 60.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_180.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_181.root
+3755 64 58.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_182.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_183.root
+3875 64 60.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_184.root
+3649 64 57.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_185.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_186.root
+3780 64 59.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_187.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_188.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_189.root
+3736 64 58.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_18.root
+3755 64 58.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_190.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_191.root
+3782 64 59.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_192.root
+3752 64 58.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_193.root
+3953 64 61.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_194.root
+3800 64 59.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_195.root
+3812 64 59.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_196.root
+3841 64 60.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_197.root
+3945 64 61.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_198.root
+3846 64 60.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_199.root
+3725 64 58.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_19.root
+3849 64 60.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_210.root
+3758 64 58.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_211.root
+3813 64 59.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_212.root
+3713 64 58.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_213.root
+3786 64 59.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_214.root
+3897 64 60.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_215.root
+3758 64 58.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_216.root
+3733 64 58.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_217.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_218.root
+3893 64 60.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_219.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_21.root
+3803 64 59.421875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_220.root
+3743 64 58.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_221.root
+3676 64 57.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_223.root
+3840 64 60.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_224.root
+3780 64 59.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_225.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_226.root
+3807 64 59.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_227.root
+3866 64 60.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_228.root
+3767 64 58.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_229.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_22.root
+3752 64 58.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_230.root
+3750 64 58.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_231.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_232.root
+3745 64 58.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_233.root
+3707 64 57.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_234.root
+3752 64 58.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_235.root
+3750 64 58.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_236.root
+3869 64 60.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_237.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_238.root
+3741 64 58.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_239.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_23.root
+3841 64 60.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_240.root
+3958 64 61.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_241.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_242.root
+3717 64 58.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_243.root
+3754 64 58.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_244.root
+3779 64 59.046875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_245.root
+3816 64 59.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_246.root
+3802 64 59.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_247.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_248.root
+3772 64 58.9375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_249.root
+3888 64 60.75
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_24.root
+3951 64 61.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_250.root
+3799 64 59.359375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_251.root
+3787 64 59.171875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_252.root
+3734 64 58.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_253.root
+3908 64 61.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_254.root
+3938 64 61.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_255.root
+3753 64 58.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_256.root
+3764 64 58.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_257.root
+3766 64 58.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_258.root
+3894 64 60.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_259.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_25.root
+3771 64 58.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_260.root
+3811 64 59.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_261.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_262.root
+3834 64 59.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_263.root
+3985 64 62.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_264.root
+3920 64 61.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_265.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_266.root
+3791 64 59.234375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_267.root
+3808 64 59.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_268.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_269.root
+3914 64 61.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_26.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_270.root
+3954 64 61.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_271.root
+4025 64 62.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_272.root
+3937 64 61.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_273.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_274.root
+3842 64 60.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_275.root
+3760 64 58.75
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_276.root
+3780 64 59.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_277.root
+3874 64 60.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_278.root
+3725 64 58.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_279.root
+3913 64 61.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_27.root
+3876 64 60.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_280.root
+3792 64 59.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_281.root
+3906 64 61.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_282.root
+3852 64 60.1875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_283.root
+3892 64 60.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_284.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_285.root
+3930 64 61.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_286.root
+3753 64 58.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_287.root
+3859 64 60.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_288.root
+3990 64 62.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_289.root
+3850 64 60.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_28.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_290.root
+3850 64 60.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_291.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_292.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_293.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_294.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_295.root
+3880 64 60.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_296.root
+3840 64 60.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_297.root
+3872 64 60.5
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_298.root
+3886 64 60.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_299.root
+3705 64 57.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_29.root
+3876 64 60.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_40.root
+3829 64 59.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_41.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_42.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_43.root
+3874 64 60.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_44.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_45.root
+3787 64 59.171875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_46.root
+3822 64 59.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_47.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_48.root
+3877 64 60.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_49.root
+3794 64 59.28125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_4.root
+3834 64 59.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_50.root
+3920 64 61.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_51.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_52.root
+3889 64 60.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_53.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_54.root
+3712 64 58.0
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_55.root
+3960 64 61.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_56.root
+3897 64 60.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_57.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_58.root
+3869 64 60.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_59.root
+3854 64 60.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_5.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_60.root
+3749 64 58.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_61.root
+3797 64 59.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_62.root
+3798 64 59.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_63.root
+3774 64 58.96875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_64.root
+3925 64 61.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_65.root
+3883 64 60.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_66.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_67.root
+3797 64 59.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_68.root
+3970 64 62.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_69.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_6.root
+3770 64 58.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_70.root
+3837 64 59.953125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_71.root
+3832 64 59.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_72.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_73.root
+3822 64 59.71875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_74.root
+3762 64 58.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_75.root
+3795 64 59.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_76.root
+3798 64 59.34375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_77.root
+3807 64 59.484375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_78.root
+3802 64 59.40625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_79.root
+3718 64 58.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_7.root
+3781 64 59.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_80.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_81.root
+3770 64 58.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_82.root
+3914 64 61.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_83.root
+3818 64 59.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_84.root
+3823 64 59.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_85.root
+3790 64 59.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_86.root
+3947 64 61.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_87.root
+3877 64 60.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_88.root
+3856 64 60.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_89.root
+3857 64 60.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_8.root
+3923 64 61.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_90.root
+3910 64 61.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_91.root
+3883 64 60.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_92.root
+3669 64 57.328125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_93.root
+3890 64 60.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_94.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_95.root
+3827 64 59.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_96.root
+3770 64 58.90625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_97.root
+3859 64 60.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_98.root
+3830 64 59.84375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_99.root
+3860 64 60.3125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_9.root
+3707 64 57.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_310.root
+3941 64 61.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_311.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_312.root
+3876 64 60.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_313.root
+3817 64 59.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_314.root
+3892 64 60.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_315.root
+3906 64 61.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_316.root
+3814 64 59.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_317.root
+3760 64 58.75
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_318.root
+3785 64 59.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_319.root
+3890 64 60.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_31.root
+3876 64 60.5625
+entering while loop
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_110.root
+3748 64 58.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_112.root
+3810 64 59.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_113.root
+3637 64 56.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_114.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/training/DeepCoreTrainingSample_115.root
+3939 64 61.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_321.root
+3800 64 59.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_322.root
+3833 64 59.890625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_323.root
+3751 64 58.609375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_324.root
+3929 64 61.390625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_325.root
+3880 64 60.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_326.root
+3806 64 59.46875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_327.root
+3891 64 60.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_328.root
+3768 64 58.875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_329.root
+3946 64 61.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_32.root
+3875 64 60.546875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_330.root
+3905 64 61.015625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_331.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_332.root
+3726 64 58.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_334.root
+3788 64 59.1875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_335.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_336.root
+3881 64 60.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_337.root
+3889 64 60.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_338.root
+3812 64 59.5625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_339.root
+3836 64 59.9375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_33.root
+3820 64 59.6875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_340.root
+3828 64 59.8125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_341.root
+3849 64 60.140625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_342.root
+3730 64 58.28125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_343.root
+3792 64 59.25
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_344.root
+3821 64 59.703125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_345.root
+3809 64 59.515625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_346.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_347.root
+3839 64 59.984375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_348.root
+3850 64 60.15625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_349.root
+3847 64 60.109375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_34.root
+3795 64 59.296875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_350.root
+3867 64 60.421875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_351.root
+3741 64 58.453125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_352.root
+3853 64 60.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_353.root
+3868 64 60.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_354.root
+3740 64 58.4375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_355.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_356.root
+3882 64 60.65625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_357.root
+3826 64 59.78125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_358.root
+3928 64 61.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_359.root
+3778 64 59.03125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_35.root
+3793 64 59.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_360.root
+3782 64 59.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_361.root
+3878 64 60.59375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_362.root
+3749 64 58.578125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_363.root
+3874 64 60.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_364.root
+3701 64 57.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_365.root
+3899 64 60.921875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_366.root
+3854 64 60.21875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_367.root
+3972 64 62.0625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_368.root
+3831 64 59.859375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_369.root
+3845 64 60.078125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_36.root
+3753 64 58.640625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_370.root
+3782 64 59.09375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_371.root
+3938 64 61.53125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_372.root
+3729 64 58.265625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_373.root
+3765 64 58.828125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_374.root
+3819 64 59.671875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_375.root
+3853 64 60.203125
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_376.root
+3944 64 61.625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_377.root
+3847 64 60.109375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_378.root
+3763 64 58.796875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_379.root
+3864 64 60.375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_37.root
+3697 64 57.765625
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_380.root
+3836 64 59.9375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_38.root
+3695 64 57.734375
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_39.root
+3790 64 59.21875
+entering while loop
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_320.root
+3838 64 59.96875
+opening file
+/storage/local/data1/gpuscratch/hichemb/Training0217/TrainingSamples/validation/DeepCoreTrainingSample_321.root
+3800 64 59.375
+16331/16331 - 1292s - loss: 12.3162 - reshape_1_loss: 9.8932 - reshape_2_loss: 2.4229 - val_loss: 10.0152 - val_reshape_1_loss: 7.8888 - val_reshape_2_loss: 2.1264
+
+Epoch 00002: saving model to weights.02-10.02.hdf5
+training: completed
